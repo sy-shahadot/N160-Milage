@@ -1,227 +1,1180 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bike Mileage & Maintenance Tracker</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #121212;
-      color: #e0e0e0;
-    }
-    header {
-      display: flex;
-      justify-content: space-around;
-      padding: 1rem;
-      background: #1e1e1e;
-    }
-    header button {
-      background: #333;
-      color: #fff;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    main {
-      padding: 1rem;
-    }
-    section { display: none; }
-    section.active { display: block; }
-    input, select, textarea {
-      background: #222;
-      color: #fff;
-      border: 1px solid #444;
-      padding: 0.5rem;
-      border-radius: 4px;
-      width: 100%;
-      margin: 0.2rem 0;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 1rem;
-    }
-    th, td {
-      border: 1px solid #444;
-      padding: 0.5rem;
-      text-align: left;
-    }
-    .actions button {
-      margin: 0 0.2rem;
-    }
-    .flex {
-      display: flex;
-      gap: 0.5rem;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bike Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            color: #e0e6ed;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Auth Styles */
+        .auth-container {
+            max-width: 400px;
+            margin: 100px auto;
+            background: rgba(22, 33, 62, 0.8);
+            padding: 40px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(224, 230, 237, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .auth-title {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #b8c5d6;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid rgba(224, 230, 237, 0.2);
+            border-radius: 8px;
+            background: rgba(15, 15, 35, 0.5);
+            color: #e0e6ed;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            background: rgba(15, 15, 35, 0.8);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(224, 230, 237, 0.1);
+            color: #b8c5d6;
+            border: 1px solid rgba(224, 230, 237, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(224, 230, 237, 0.2);
+            color: #e0e6ed;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(255, 107, 107, 0.4);
+        }
+
+        .switch-auth {
+            text-align: center;
+            margin-top: 20px;
+            color: #b8c5d6;
+        }
+
+        .switch-auth a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .switch-auth a:hover {
+            text-decoration: underline;
+        }
+
+        /* App Styles */
+        .app-header {
+            background: rgba(22, 33, 62, 0.8);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(224, 230, 237, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .app-title {
+            font-size: 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: rgba(224, 230, 237, 0.1);
+            border: 1px solid rgba(224, 230, 237, 0.2);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+            text-align: center;
+            min-width: 150px;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: transparent;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card {
+            background: rgba(22, 33, 62, 0.8);
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(224, 230, 237, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(224, 230, 237, 0.1);
+        }
+
+        .data-table th {
+            background: rgba(15, 15, 35, 0.5);
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .data-table tr:hover {
+            background: rgba(224, 230, 237, 0.05);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(15, 15, 35, 0.5);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid rgba(224, 230, 237, 0.1);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #b8c5d6;
+            font-size: 0.9rem;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid;
+        }
+
+        .alert-success {
+            background: rgba(46, 160, 67, 0.1);
+            border-color: #2ea043;
+            color: #2ea043;
+        }
+
+        .alert-error {
+            background: rgba(255, 107, 107, 0.1);
+            border-color: #ff6b6b;
+            color: #ff6b6b;
+        }
+
+        .export-import {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: rgba(22, 33, 62, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(224, 230, 237, 0.1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .close {
+            background: none;
+            border: none;
+            color: #b8c5d6;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close:hover {
+            color: #e0e6ed;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .app-header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab {
+                min-width: unset;
+            }
+
+            .data-table {
+                font-size: 14px;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 8px 4px;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
+            .export-import {
+                flex-direction: column;
+            }
+        }
+    </style>
 </head>
 <body>
-  <header>
-    <button onclick="showSection('login')">Account</button>
-    <button onclick="showSection('mileage')">Mileage</button>
-    <button onclick="showSection('maintenance')">Maintenance</button>
-  </header>
+    <!-- Authentication -->
+    <div id="auth-section">
+        <div class="auth-container">
+            <div id="login-form">
+                <h2 class="auth-title">Login</h2>
+                <div class="form-group">
+                    <label for="login-username">Username</label>
+                    <input type="text" id="login-username" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" class="form-control" required>
+                </div>
+                <button onclick="login()" class="btn btn-primary">Login</button>
+                <div class="switch-auth">
+                    Don't have an account? <a href="#" onclick="showRegister()">Register</a>
+                </div>
+            </div>
 
-  <main>
-    <!-- Login -->
-    <section id="login" class="active">
-      <h2>Login / Register</h2>
-      <input id="username" placeholder="Username" />
-      <input id="password" type="password" placeholder="Password" />
-      <div class="flex">
-        <button onclick="register()">Register</button>
-        <button onclick="login()">Login</button>
-        <button onclick="logout()">Logout</button>
-      </div>
-      <p id="loginStatus"></p>
-      <div class="flex">
-        <button onclick="exportCSV()">Export CSV</button>
-        <button onclick="backupAll()">Full Backup</button>
-        <input type="file" id="importFile" onchange="importAll(event)" />
-      </div>
-    </section>
+            <div id="register-form" class="hidden">
+                <h2 class="auth-title">Register</h2>
+                <div class="form-group">
+                    <label for="register-username">Username</label>
+                    <input type="text" id="register-username" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-password">Password</label>
+                    <input type="password" id="register-password" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirm-password">Confirm Password</label>
+                    <input type="password" id="confirm-password" class="form-control" required>
+                </div>
+                <button onclick="register()" class="btn btn-primary">Register</button>
+                <div class="switch-auth">
+                    Already have an account? <a href="#" onclick="showLogin()">Login</a>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <!-- Mileage -->
-    <section id="mileage">
-      <h2>Mileage Tracking</h2>
-      <div>
-        <input type="date" id="mDate" />
-        <input type="number" id="odo" placeholder="Odometer" />
-        <input type="number" id="fuelPrice" placeholder="Fuel Price" step="0.01" />
-        <input type="number" id="totalCost" placeholder="Total Cost" step="0.01" />
-        <label><input type="checkbox" id="newSegment" /> Start New Segment</label>
-        <button onclick="addMileage()">Add</button>
-      </div>
-      <table id="mileageTable">
-        <thead><tr><th>Date</th><th>Odo</th><th>Fuel Price</th><th>Total Cost</th><th>Fuel (L)</th><th>Actions</th></tr></thead>
-        <tbody></tbody>
-      </table>
-    </section>
+    <!-- Main App -->
+    <div id="app-section" class="hidden">
+        <div class="container">
+            <div class="app-header">
+                <h1 class="app-title">🏍️ Bike Tracker</h1>
+                <div class="user-info">
+                    <span>Welcome, <strong id="current-user"></strong></span>
+                    <button onclick="logout()" class="btn btn-secondary btn-small">Logout</button>
+                </div>
+            </div>
 
-    <!-- Maintenance -->
-    <section id="maintenance">
-      <h2>Maintenance Tracking</h2>
-      <div>
-        <input type="date" id="maintDate" />
-        <input id="maintDesc" placeholder="Description" />
-        <input type="number" id="maintAmt" placeholder="Amount" step="0.01" />
-        <button onclick="addMaintenance()">Add</button>
-      </div>
-      <canvas id="maintChart" height="100"></canvas>
-      <table id="maintTable">
-        <thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Actions</th></tr></thead>
-        <tbody></tbody>
-      </table>
-      <div id="maintTotals"></div>
-    </section>
-  </main>
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('mileage')">Mileage Tracking</div>
+                <div class="tab" onclick="switchTab('maintenance')">Maintenance</div>
+            </div>
 
-  <script>
-    let currentUser = null;
-    let users = JSON.parse(localStorage.getItem('bikeUsers')||'{}');
+            <!-- Mileage Tab -->
+            <div id="mileage-tab" class="tab-content active">
+                <div class="export-import">
+                    <button onclick="exportData('mileage')" class="btn btn-secondary">Export Mileage</button>
+                    <label for="import-mileage" class="btn btn-secondary">Import Mileage</label>
+                    <input type="file" id="import-mileage" class="file-input" accept=".json" onchange="importData('mileage', this)">
+                    <button onclick="resetMileageFromNext()" class="btn btn-secondary">Reset From Next Entry</button>
+                </div>
 
-    function saveUsers(){ localStorage.setItem('bikeUsers', JSON.stringify(users)); }
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="total-distance">0</div>
+                        <div class="stat-label">Total Distance (KM)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="total-fuel-cost">₹0</div>
+                        <div class="stat-label">Total Fuel Cost</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="avg-mileage">0</div>
+                        <div class="stat-label">Average Mileage (KM/L)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="cost-per-km">₹0</div>
+                        <div class="stat-label">Cost per KM</div>
+                    </div>
+                </div>
 
-    function register(){
-      const u = username.value.trim();
-      const p = password.value;
-      if(!u||!p) return;
-      if(users[u]){ alert('User exists'); return; }
-      users[u] = {password: p, mileage: [], maintenance: []};
-      saveUsers();
-      alert('Registered!');
-    }
-    function login(){
-      const u=username.value.trim(), p=password.value;
-      if(users[u] && users[u].password===p){ currentUser=u; loginStatus.textContent='Logged in as '+u; render(); }
-      else loginStatus.textContent='Invalid login';
-    }
-    function logout(){ currentUser=null; loginStatus.textContent='Logged out'; }
+                <div class="card">
+                    <h3 class="card-title">Add Mileage Entry</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Date</label>
+                            <input type="date" id="mileage-date" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Current Odometer (KM)</label>
+                            <input type="number" id="current-odo" class="form-control" step="0.1" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Fuel Price (₹/L)</label>
+                            <input type="number" id="fuel-price" class="form-control" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Total Cost (₹)</label>
+                            <input type="number" id="total-cost" class="form-control" step="0.01" required>
+                        </div>
+                    </div>
+                    <button onclick="addMileageEntry()" class="btn btn-primary">Add Entry</button>
+                </div>
 
-    function showSection(id){
-      document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
-    }
+                <div class="card">
+                    <h3 class="card-title">Mileage History</h3>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Odometer</th>
+                                <th>Distance</th>
+                                <th>Fuel (L)</th>
+                                <th>Cost</th>
+                                <th>Mileage</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mileage-history">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
-    function addMileage(){
-      if(!currentUser){ alert('Login first'); return; }
-      const d=mDate.value, o=+odo.value, fp=+fuelPrice.value, tc=+totalCost.value;
-      if(!d||!o||!fp||!tc) return;
-      const fuel = tc/fp;
-      users[currentUser].mileage.push({date:d, odo:o, fuelPrice:fp, totalCost:tc, fuel:fuel, newSegment:newSegment.checked});
-      saveUsers(); renderMileage();
-    }
+            <!-- Maintenance Tab -->
+            <div id="maintenance-tab" class="tab-content">
+                <div class="export-import">
+                    <button onclick="exportData('maintenance')" class="btn btn-secondary">Export Maintenance</button>
+                    <label for="import-maintenance" class="btn btn-secondary">Import Maintenance</label>
+                    <input type="file" id="import-maintenance" class="file-input" accept=".json" onchange="importData('maintenance', this)">
+                </div>
 
-    function addMaintenance(){
-      if(!currentUser){ alert('Login first'); return; }
-      const d=maintDate.value, desc=maintDesc.value, amt=+maintAmt.value;
-      if(!d||!desc||!amt) return;
-      users[currentUser].maintenance.push({date:d, desc:desc, amount:amt});
-      saveUsers(); renderMaintenance();
-    }
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="monthly-cost">₹0</div>
+                        <div class="stat-label">This Month</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="yearly-cost">₹0</div>
+                        <div class="stat-label">This Year</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="total-maintenance-cost">₹0</div>
+                        <div class="stat-label">Total Maintenance</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="maintenance-cost-per-km">₹0</div>
+                        <div class="stat-label">Maintenance Cost per KM</div>
+                    </div>
+                </div>
 
-    function render(){ renderMileage(); renderMaintenance(); }
+                <div class="card">
+                    <h3 class="card-title">Add Maintenance Entry</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Date</label>
+                            <input type="date" id="maintenance-date" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <input type="text" id="maintenance-description" class="form-control" placeholder="Oil change, tire replacement, etc." required>
+                        </div>
+                        <div class="form-group">
+                            <label>Amount (₹)</label>
+                            <input type="number" id="maintenance-amount" class="form-control" step="0.01" required>
+                        </div>
+                    </div>
+                    <button onclick="addMaintenanceEntry()" class="btn btn-primary">Add Entry</button>
+                </div>
 
-    function renderMileage(){
-      const tbody=document.querySelector('#mileageTable tbody'); tbody.innerHTML='';
-      if(!currentUser) return;
-      users[currentUser].mileage.forEach((m,i)=>{
-        tbody.innerHTML+=`<tr><td>${m.date}</td><td>${m.odo}</td><td>${m.fuelPrice}</td><td>${m.totalCost}</td><td>${m.fuel.toFixed(2)}</td><td class='actions'><button onclick="delMileage(${i})">Del</button></td></tr>`;
-      });
-    }
-    function renderMaintenance(){
-      const tbody=document.querySelector('#maintTable tbody'); tbody.innerHTML='';
-      if(!currentUser) return;
-      users[currentUser].maintenance.forEach((m,i)=>{
-        tbody.innerHTML+=`<tr><td>${m.date}</td><td>${m.desc}</td><td>${m.amount}</td><td><button onclick="delMaint(${i})">Del</button></td></tr>`;
-      });
-      drawChart();
-    }
-    function delMileage(i){ users[currentUser].mileage.splice(i,1); saveUsers(); renderMileage(); }
-    function delMaint(i){ users[currentUser].maintenance.splice(i,1); saveUsers(); renderMaintenance(); }
+                <div class="card">
+                    <h3 class="card-title">Maintenance History</h3>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Description</th>
+                                <th>Amount</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="maintenance-history">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    let chart;
-    function drawChart(){
-      const ctx=document.getElementById('maintChart').getContext('2d');
-      if(chart) chart.destroy();
-      const dataByMonth={};
-      users[currentUser].maintenance.forEach(m=>{
-        const month=m.date.substring(0,7);
-        dataByMonth[month]=(dataByMonth[month]||0)+m.amount;
-      });
-      chart=new Chart(ctx,{type:'bar',data:{labels:Object.keys(dataByMonth),datasets:[{label:'Monthly Maintenance',data:Object.values(dataByMonth)}]},options:{responsive:true}});
-    }
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Edit Entry</h3>
+                <button class="close" onclick="closeEditModal()">&times;</button>
+            </div>
+            <div id="modal-body"></div>
+            <div style="display: flex; gap: 15px; margin-top: 20px;">
+                <button onclick="saveEdit()" class="btn btn-primary" style="flex: 1;">Save Changes</button>
+                <button onclick="closeEditModal()" class="btn btn-secondary" style="flex: 1;">Cancel</button>
+            </div>
+        </div>
+    </div>
 
-    function exportCSV(){
-      if(!currentUser) return;
-      let csv='Type,Date,Description/Odo,FuelPrice,TotalCost/Amount\\n';
-      users[currentUser].mileage.forEach(m=>{csv+=`Mileage,${m.date},${m.odo},${m.fuelPrice},${m.totalCost}\\n`;});
-      users[currentUser].maintenance.forEach(m=>{csv+=`Maintenance,${m.date},${m.desc},,${m.amount}\\n`;});
-      const blob=new Blob([csv],{type:'text/csv'});
-      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='data.csv'; a.click();
-    }
+    <script>
+        let currentUser = '';
+        let mileageData = [];
+        let maintenanceData = [];
+        let editingItem = null;
+        let editingType = '';
+        let resetFromNext = false;
 
-    function backupAll(){
-      const blob=new Blob([JSON.stringify(users)],{type:'application/json'});
-      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='backup.json'; a.click();
-    }
-    function importAll(e){
-      const file=e.target.files[0];
-      const reader=new FileReader();
-      reader.onload=()=>{ users=JSON.parse(reader.result); saveUsers(); alert('Imported!'); render(); };
-      reader.readAsText(file);
-    }
+        // Authentication Functions
+        function showRegister() {
+            document.getElementById('login-form').classList.add('hidden');
+            document.getElementById('register-form').classList.remove('hidden');
+        }
 
-    // Set date inputs default today
-    document.addEventListener('DOMContentLoaded',()=>{
-      const today=new Date().toISOString().split('T')[0];
-      mDate.value=today;
-      maintDate.value=today;
-    });
-  </script>
+        function showLogin() {
+            document.getElementById('register-form').classList.add('hidden');
+            document.getElementById('login-form').classList.remove('hidden');
+        }
+
+        function register() {
+            const username = document.getElementById('register-username').value.trim();
+            const password = document.getElementById('register-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+
+            if (!username || !password) {
+                showAlert('Please fill in all fields', 'error');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showAlert('Passwords do not match', 'error');
+                return;
+            }
+
+            const users = JSON.parse(localStorage.getItem('bikeTracker_users') || '{}');
+            
+            if (users[username]) {
+                showAlert('Username already exists', 'error');
+                return;
+            }
+
+            users[username] = { password: password };
+            localStorage.setItem('bikeTracker_users', JSON.stringify(users));
+            
+            showAlert('Registration successful! Please login.', 'success');
+            showLogin();
+            
+            // Clear form
+            document.getElementById('register-username').value = '';
+            document.getElementById('register-password').value = '';
+            document.getElementById('confirm-password').value = '';
+        }
+
+        function login() {
+            const username = document.getElementById('login-username').value.trim();
+            const password = document.getElementById('login-password').value;
+
+            if (!username || !password) {
+                showAlert('Please fill in all fields', 'error');
+                return;
+            }
+
+            const users = JSON.parse(localStorage.getItem('bikeTracker_users') || '{}');
+            
+            if (!users[username] || users[username].password !== password) {
+                showAlert('Invalid username or password', 'error');
+                return;
+            }
+
+            currentUser = username;
+            localStorage.setItem('bikeTracker_currentUser', username);
+            
+            document.getElementById('auth-section').classList.add('hidden');
+            document.getElementById('app-section').classList.remove('hidden');
+            document.getElementById('current-user').textContent = username;
+            
+            loadUserData();
+            updateStats();
+        }
+
+        function logout() {
+            currentUser = '';
+            localStorage.removeItem('bikeTracker_currentUser');
+            
+            document.getElementById('app-section').classList.add('hidden');
+            document.getElementById('auth-section').classList.remove('hidden');
+            
+            // Clear forms
+            document.getElementById('login-username').value = '';
+            document.getElementById('login-password').value = '';
+            showLogin();
+        }
+
+        // Data Management Functions
+        function loadUserData() {
+            const userData = JSON.parse(localStorage.getItem(`bikeTracker_${currentUser}`) || '{"mileage": [], "maintenance": []}');
+            mileageData = userData.mileage || [];
+            maintenanceData = userData.maintenance || [];
+            
+            renderMileageHistory();
+            renderMaintenanceHistory();
+            updateStats();
+        }
+
+        function saveUserData() {
+            const userData = {
+                mileage: mileageData,
+                maintenance: maintenanceData
+            };
+            localStorage.setItem(`bikeTracker_${currentUser}`, JSON.stringify(userData));
+        }
+
+        // Tab Management
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+        }
+
+        // Mileage Functions
+        function addMileageEntry() {
+            const date = document.getElementById('mileage-date').value;
+            const currentOdo = parseFloat(document.getElementById('current-odo').value);
+            const fuelPrice = parseFloat(document.getElementById('fuel-price').value);
+            const totalCost = parseFloat(document.getElementById('total-cost').value);
+
+            if (!date || !currentOdo || !fuelPrice || !totalCost) {
+                showAlert('Please fill in all fields', 'error');
+                return;
+            }
+
+            const fuelLiters = totalCost / fuelPrice;
+            
+            let distance = 0;
+            let mileage = 0;
+            
+            if (mileageData.length > 0 && !resetFromNext) {
+                const lastEntry = mileageData[mileageData.length - 1];
+                distance = currentOdo - lastEntry.odometer;
+                if (distance > 0) {
+                    mileage = distance / fuelLiters;
+                }
+            }
+
+            const entry = {
+                id: Date.now(),
+                date: date,
+                odometer: currentOdo,
+                fuelPrice: fuelPrice,
+                totalCost: totalCost,
+                fuelLiters: fuelLiters,
+                distance: distance,
+                mileage: mileage,
+                isReset: resetFromNext
+            };
+
+            mileageData.push(entry);
+            mileageData.sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            // Recalculate distances and mileage after sorting
+            recalculateMileageData();
+            
+            saveUserData();
+            renderMileageHistory();
+            updateStats();
+            clearMileageForm();
+            
+            resetFromNext = false;
+            showAlert('Mileage entry added successfully!', 'success');
+        }
+
+        function recalculateMileageData() {
+            for (let i = 0; i < mileageData.length; i++) {
+                if (i === 0 || mileageData[i].isReset) {
+                    mileageData[i].distance = 0;
+                    mileageData[i].mileage = 0;
+                } else {
+                    const distance = mileageData[i].odometer - mileageData[i-1].odometer;
+                    mileageData[i].distance = Math.max(0, distance);
+                    mileageData[i].mileage = mileageData[i].distance > 0 ? mileageData[i].distance / mileageData[i].fuelLiters : 0;
+                }
+            }
+        }
+
+        function clearMileageForm() {
+            document.getElementById('mileage-date').value = '';
+            document.getElementById('current-odo').value = '';
+            document.getElementById('fuel-price').value = '';
+            document.getElementById('total-cost').value = '';
+        }
+
+        function renderMileageHistory() {
+            const tbody = document.getElementById('mileage-history');
+            tbody.innerHTML = '';
+
+            mileageData.forEach(entry => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${new Date(entry.date).toLocaleDateString()}</td>
+                    <td>${entry.odometer.toFixed(1)} KM</td>
+                    <td>${entry.distance.toFixed(1)} KM ${entry.isReset ? '<span style="color: #667eea;">(Reset)</span>' : ''}</td>
+                    <td>${entry.fuelLiters.toFixed(2)} L</td>
+                    <td>₹${entry.totalCost.toFixed(2)}</td>
+                    <td>${entry.mileage.toFixed(2)} KM/L</td>
+                    <td class="actions">
+                        <button onclick="editMileageEntry(${entry.id})" class="btn btn-secondary btn-small">Edit</button>
+                        <button onclick="deleteMileageEntry(${entry.id})" class="btn btn-danger btn-small">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function resetMileageFromNext() {
+            resetFromNext = true;
+            showAlert('Next mileage entry will start a new count', 'success');
+        }
+
+        // Maintenance Functions
+        function addMaintenanceEntry() {
+            const date = document.getElementById('maintenance-date').value;
+            const description = document.getElementById('maintenance-description').value.trim();
+            const amount = parseFloat(document.getElementById('maintenance-amount').value);
+
+            if (!date || !description || !amount) {
+                showAlert('Please fill in all fields', 'error');
+                return;
+            }
+
+            const entry = {
+                id: Date.now(),
+                date: date,
+                description: description,
+                amount: amount
+            };
+
+            maintenanceData.push(entry);
+            maintenanceData.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            saveUserData();
+            renderMaintenanceHistory();
+            updateStats();
+            clearMaintenanceForm();
+            
+            showAlert('Maintenance entry added successfully!', 'success');
+        }
+
+        function clearMaintenanceForm() {
+            document.getElementById('maintenance-date').value = '';
+            document.getElementById('maintenance-description').value = '';
+            document.getElementById('maintenance-amount').value = '';
+        }
+
+        function renderMaintenanceHistory() {
+            const tbody = document.getElementById('maintenance-history');
+            tbody.innerHTML = '';
+
+            maintenanceData.forEach(entry => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${new Date(entry.date).toLocaleDateString()}</td>
+                    <td>${entry.description}</td>
+                    <td>₹${entry.amount.toFixed(2)}</td>
+                    <td class="actions">
+                        <button onclick="editMaintenanceEntry(${entry.id})" class="btn btn-secondary btn-small">Edit</button>
+                        <button onclick="deleteMaintenanceEntry(${entry.id})" class="btn btn-danger btn-small">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Edit Functions
+        function editMileageEntry(id) {
+            const entry = mileageData.find(e => e.id === id);
+            if (!entry) return;
+
+            editingItem = entry;
+            editingType = 'mileage';
+            
+            document.getElementById('modal-title').textContent = 'Edit Mileage Entry';
+            document.getElementById('modal-body').innerHTML = `
+                <div class="form-group">
+                    <label>Date</label>
+                    <input type="date" id="edit-date" class="form-control" value="${entry.date}" required>
+                </div>
+                <div class="form-group">
+                    <label>Current Odometer (KM)</label>
+                    <input type="number" id="edit-odometer" class="form-control" step="0.1" value="${entry.odometer}" required>
+                </div>
+                <div class="form-group">
+                    <label>Fuel Price (₹/L)</label>
+                    <input type="number" id="edit-fuel-price" class="form-control" step="0.01" value="${entry.fuelPrice}" required>
+                </div>
+                <div class="form-group">
+                    <label>Total Cost (₹)</label>
+                    <input type="number" id="edit-total-cost" class="form-control" step="0.01" value="${entry.totalCost}" required>
+                </div>
+            `;
+            
+            document.getElementById('edit-modal').classList.remove('hidden');
+        }
+
+        function editMaintenanceEntry(id) {
+            const entry = maintenanceData.find(e => e.id === id);
+            if (!entry) return;
+
+            editingItem = entry;
+            editingType = 'maintenance';
+            
+            document.getElementById('modal-title').textContent = 'Edit Maintenance Entry';
+            document.getElementById('modal-body').innerHTML = `
+                <div class="form-group">
+                    <label>Date</label>
+                    <input type="date" id="edit-date" class="form-control" value="${entry.date}" required>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <input type="text" id="edit-description" class="form-control" value="${entry.description}" required>
+                </div>
+                <div class="form-group">
+                    <label>Amount (₹)</label>
+                    <input type="number" id="edit-amount" class="form-control" step="0.01" value="${entry.amount}" required>
+                </div>
+            `;
+            
+            document.getElementById('edit-modal').classList.remove('hidden');
+        }
+
+        function saveEdit() {
+            if (editingType === 'mileage') {
+                const date = document.getElementById('edit-date').value;
+                const odometer = parseFloat(document.getElementById('edit-odometer').value);
+                const fuelPrice = parseFloat(document.getElementById('edit-fuel-price').value);
+                const totalCost = parseFloat(document.getElementById('edit-total-cost').value);
+
+                if (!date || !odometer || !fuelPrice || !totalCost) {
+                    showAlert('Please fill in all fields', 'error');
+                    return;
+                }
+
+                editingItem.date = date;
+                editingItem.odometer = odometer;
+                editingItem.fuelPrice = fuelPrice;
+                editingItem.totalCost = totalCost;
+                editingItem.fuelLiters = totalCost / fuelPrice;
+
+                mileageData.sort((a, b) => new Date(a.date) - new Date(b.date));
+                recalculateMileageData();
+                renderMileageHistory();
+                
+            } else if (editingType === 'maintenance') {
+                const date = document.getElementById('edit-date').value;
+                const description = document.getElementById('edit-description').value.trim();
+                const amount = parseFloat(document.getElementById('edit-amount').value);
+
+                if (!date || !description || !amount) {
+                    showAlert('Please fill in all fields', 'error');
+                    return;
+                }
+
+                editingItem.date = date;
+                editingItem.description = description;
+                editingItem.amount = amount;
+
+                maintenanceData.sort((a, b) => new Date(b.date) - new Date(a.date));
+                renderMaintenanceHistory();
+            }
+
+            saveUserData();
+            updateStats();
+            closeEditModal();
+            showAlert('Entry updated successfully!', 'success');
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.add('hidden');
+            editingItem = null;
+            editingType = '';
+        }
+
+        // Delete Functions
+        function deleteMileageEntry(id) {
+            if (confirm('Are you sure you want to delete this entry?')) {
+                mileageData = mileageData.filter(e => e.id !== id);
+                recalculateMileageData();
+                saveUserData();
+                renderMileageHistory();
+                updateStats();
+                showAlert('Entry deleted successfully!', 'success');
+            }
+        }
+
+        function deleteMaintenanceEntry(id) {
+            if (confirm('Are you sure you want to delete this entry?')) {
+                maintenanceData = maintenanceData.filter(e => e.id !== id);
+                saveUserData();
+                renderMaintenanceHistory();
+                updateStats();
+                showAlert('Entry deleted successfully!', 'success');
+            }
+        }
+
+        // Statistics Functions
+        function updateStats() {
+            updateMileageStats();
+            updateMaintenanceStats();
+        }
+
+        function updateMileageStats() {
+            const totalDistance = mileageData.reduce((sum, entry) => sum + entry.distance, 0);
+            const totalFuelCost = mileageData.reduce((sum, entry) => sum + entry.totalCost, 0);
+            const totalFuelLiters = mileageData.reduce((sum, entry) => sum + entry.fuelLiters, 0);
+            const avgMileage = totalFuelLiters > 0 ? totalDistance / totalFuelLiters : 0;
+            const totalMaintenanceCost = maintenanceData.reduce((sum, entry) => sum + entry.amount, 0);
+            const costPerKm = totalDistance > 0 ? (totalFuelCost + totalMaintenanceCost) / totalDistance : 0;
+
+            document.getElementById('total-distance').textContent = totalDistance.toFixed(1);
+            document.getElementById('total-fuel-cost').textContent = `₹${totalFuelCost.toFixed(2)}`;
+            document.getElementById('avg-mileage').textContent = avgMileage.toFixed(2);
+            document.getElementById('cost-per-km').textContent = `₹${costPerKm.toFixed(2)}`;
+        }
+
+        function updateMaintenanceStats() {
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+
+            const monthlyTotal = maintenanceData
+                .filter(entry => {
+                    const entryDate = new Date(entry.date);
+                    return entryDate.getMonth() === currentMonth && entryDate.getFullYear() === currentYear;
+                })
+                .reduce((sum, entry) => sum + entry.amount, 0);
+
+            const yearlyTotal = maintenanceData
+                .filter(entry => new Date(entry.date).getFullYear() === currentYear)
+                .reduce((sum, entry) => sum + entry.amount, 0);
+
+            const totalMaintenanceCost = maintenanceData.reduce((sum, entry) => sum + entry.amount, 0);
+            
+            const totalDistance = mileageData.reduce((sum, entry) => sum + entry.distance, 0);
+            const maintenanceCostPerKm = totalDistance > 0 ? totalMaintenanceCost / totalDistance : 0;
+
+            document.getElementById('monthly-cost').textContent = `₹${monthlyTotal.toFixed(2)}`;
+            document.getElementById('yearly-cost').textContent = `₹${yearlyTotal.toFixed(2)}`;
+            document.getElementById('total-maintenance-cost').textContent = `₹${totalMaintenanceCost.toFixed(2)}`;
+            document.getElementById('maintenance-cost-per-km').textContent = `₹${maintenanceCostPerKm.toFixed(2)}`;
+        }
+
+        // Export/Import Functions
+        function exportData(type) {
+            const data = type === 'mileage' ? mileageData : maintenanceData;
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `bike_${type}_${currentUser}_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            
+            showAlert(`${type} data exported successfully!`, 'success');
+        }
+
+        function importData(type, input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    
+                    if (!Array.isArray(importedData)) {
+                        throw new Error('Invalid file format');
+                    }
+
+                    if (confirm(`This will replace all existing ${type} data. Are you sure?`)) {
+                        if (type === 'mileage') {
+                            mileageData = importedData;
+                            mileageData.sort((a, b) => new Date(a.date) - new Date(b.date));
+                            recalculateMileageData();
+                            renderMileageHistory();
+                        } else {
+                            maintenanceData = importedData;
+                            maintenanceData.sort((a, b) => new Date(b.date) - new Date(a.date));
+                            renderMaintenanceHistory();
+                        }
+                        
+                        saveUserData();
+                        updateStats();
+                        showAlert(`${type} data imported successfully!`, 'success');
+                    }
+                } catch (error) {
+                    showAlert('Error importing file. Please check the file format.', 'error');
+                }
+            };
+            reader.readAsText(file);
+            
+            // Clear the input
+            input.value = '';
+        }
+
+        // Utility Functions
+        function showAlert(message, type) {
+            // Remove existing alerts
+            const existingAlerts = document.querySelectorAll('.alert');
+            existingAlerts.forEach(alert => alert.remove());
+
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            
+            const container = document.querySelector('.container') || document.querySelector('.auth-container');
+            container.insertBefore(alert, container.firstChild);
+            
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+
+        // Initialize App
+        function initApp() {
+            // Set today's date as default
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('mileage-date').value = today;
+            document.getElementById('maintenance-date').value = today;
+
+            // Check if user is already logged in
+            const savedUser = localStorage.getItem('bikeTracker_currentUser');
+            if (savedUser) {
+                const users = JSON.parse(localStorage.getItem('bikeTracker_users') || '{}');
+                if (users[savedUser]) {
+                    currentUser = savedUser;
+                    document.getElementById('auth-section').classList.add('hidden');
+                    document.getElementById('app-section').classList.remove('hidden');
+                    document.getElementById('current-user').textContent = savedUser;
+                    loadUserData();
+                    updateStats();
+                }
+            }
+
+            // Add keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeEditModal();
+                }
+            });
+
+            // Close modal when clicking outside
+            document.getElementById('edit-modal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeEditModal();
+                }
+            });
+        }
+
+        // Start the app
+        initApp();
+    </script>
 </body>
 </html>
