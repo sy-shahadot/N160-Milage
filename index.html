@@ -1,360 +1,227 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Bike Mileage Tracker — Local</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bike Mileage & Maintenance Tracker</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    :root{
-      --bg:#0b0f14; --card:#0f1720; --muted:#98a0ab; --accent:#7c3aed; --accent-2:#06b6d4; --danger:#ef4444; --glass: rgba(255,255,255,0.03);
-      --radius:12px; --gap:14px; font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #121212;
+      color: #e0e0e0;
     }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{margin:0;background:linear-gradient(180deg,var(--bg),#071018);color:#e6eef6; -webkit-font-smoothing:antialiased; padding:18px}
-    .app{max-width:980px;margin:0 auto}
-    header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:18px}
-    h1{font-size:18px;margin:0}
-    .card{background:linear-gradient(180deg,var(--card),rgba(12,16,22,0.9));border-radius:var(--radius);padding:14px;box-shadow:0 6px 18px rgba(2,6,23,0.6)}
-    nav.tabs{display:flex;gap:8px}
-    .tab{padding:8px 12px;border-radius:10px;background:transparent;color:var(--muted);cursor:pointer}
-    .tab.active{background:linear-gradient(90deg,rgba(124,58,237,0.16),rgba(6,182,212,0.08));color:#fff}
-    .controls{display:flex;gap:8px;align-items:center}
-    input,select,textarea{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:10px;border-radius:10px;color:inherit;width:100%}
-    label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
-    .grid{display:grid;gap:10px}
-    .grid.cols-2{grid-template-columns:1fr 1fr}
-    .muted{color:var(--muted);font-size:13px}
-    button{background:var(--accent);border:none;padding:10px 12px;border-radius:10px;color:white;cursor:pointer}
-    button.alt{background:transparent;border:1px solid rgba(255,255,255,0.06)}
-    .danger{background:var(--danger)}
-    table{width:100%;border-collapse:collapse;margin-top:10px}
-    th,td{padding:8px;border-bottom:1px dashed rgba(255,255,255,0.03);text-align:left;font-size:13px}
-    small.hint{color:var(--muted);display:block;margin-top:6px}
-    .mobile-row{display:flex;gap:8px}
-    .actions{display:flex;gap:6px}
-    .stats{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-    .stat{background:var(--glass);padding:10px;border-radius:10px;min-width:140px}
-    footer{margin-top:18px;text-align:center;color:var(--muted);font-size:13px}
-    /* responsive */
-    @media (max-width:720px){
-      .grid.cols-2{grid-template-columns:1fr}
-      header{flex-direction:column;align-items:flex-start;gap:10px}
+    header {
+      display: flex;
+      justify-content: space-around;
+      padding: 1rem;
+      background: #1e1e1e;
+    }
+    header button {
+      background: #333;
+      color: #fff;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    main {
+      padding: 1rem;
+    }
+    section { display: none; }
+    section.active { display: block; }
+    input, select, textarea {
+      background: #222;
+      color: #fff;
+      border: 1px solid #444;
+      padding: 0.5rem;
+      border-radius: 4px;
+      width: 100%;
+      margin: 0.2rem 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    th, td {
+      border: 1px solid #444;
+      padding: 0.5rem;
+      text-align: left;
+    }
+    .actions button {
+      margin: 0 0.2rem;
+    }
+    .flex {
+      display: flex;
+      gap: 0.5rem;
     }
   </style>
 </head>
 <body>
-  <div class="app">
-    <header>
+  <header>
+    <button onclick="showSection('login')">Account</button>
+    <button onclick="showSection('mileage')">Mileage</button>
+    <button onclick="showSection('maintenance')">Maintenance</button>
+  </header>
+
+  <main>
+    <!-- Login -->
+    <section id="login" class="active">
+      <h2>Login / Register</h2>
+      <input id="username" placeholder="Username" />
+      <input id="password" type="password" placeholder="Password" />
+      <div class="flex">
+        <button onclick="register()">Register</button>
+        <button onclick="login()">Login</button>
+        <button onclick="logout()">Logout</button>
+      </div>
+      <p id="loginStatus"></p>
+      <div class="flex">
+        <button onclick="exportCSV()">Export CSV</button>
+        <button onclick="backupAll()">Full Backup</button>
+        <input type="file" id="importFile" onchange="importAll(event)" />
+      </div>
+    </section>
+
+    <!-- Mileage -->
+    <section id="mileage">
+      <h2>Mileage Tracking</h2>
       <div>
-        <h1>🏍️ Bike Mileage Tracker</h1>
-        <div class="muted">Local-only, export/import, dark UI — works as a single static file for GitHub Pages</div>
+        <input type="date" id="mDate" />
+        <input type="number" id="odo" placeholder="Odometer" />
+        <input type="number" id="fuelPrice" placeholder="Fuel Price" step="0.01" />
+        <input type="number" id="totalCost" placeholder="Total Cost" step="0.01" />
+        <label><input type="checkbox" id="newSegment" /> Start New Segment</label>
+        <button onclick="addMileage()">Add</button>
       </div>
-      <div class="controls">
-        <div id="userBox"></div>
-        <button id="exportBtn" class="alt">Export</button>
-        <input id="importFile" type="file" accept="application/json" style="display:none">
-        <button id="importBtn" class="alt">Import</button>
+      <table id="mileageTable">
+        <thead><tr><th>Date</th><th>Odo</th><th>Fuel Price</th><th>Total Cost</th><th>Fuel (L)</th><th>Actions</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- Maintenance -->
+    <section id="maintenance">
+      <h2>Maintenance Tracking</h2>
+      <div>
+        <input type="date" id="maintDate" />
+        <input id="maintDesc" placeholder="Description" />
+        <input type="number" id="maintAmt" placeholder="Amount" step="0.01" />
+        <button onclick="addMaintenance()">Add</button>
       </div>
-    </header>
-
-    <div class="card">
-      <nav class="tabs" role="tablist">
-        <button class="tab active" data-tab="mileage">Mileage</button>
-        <button class="tab" data-tab="maintenance">Maintenance</button>
-        <button class="tab" data-tab="account">Account</button>
-      </nav>
-
-      <main id="mainArea">
-        <!-- Mileage tab -->
-        <section id="mileageTab" class="tabContent">
-          <form id="mileageForm" class="grid cols-2" onsubmit="return false;">
-            <div>
-              <label>Date</label>
-              <input type="date" id="m_date" required />
-            </div>
-            <div>
-              <label>Odometer (km)</label>
-              <input type="number" id="m_odo" min="0" step="1" required />
-            </div>
-            <div>
-              <label>Fuel price (per L)</label>
-              <input type="number" id="m_fuel_price" min="0" step="0.01" required />
-            </div>
-            <div>
-              <label>Total cost (currency)</label>
-              <input type="number" id="m_total_cost" min="0" step="0.01" required />
-              <small class="hint">Fuel amount will be auto-calculated = total cost / fuel price</small>
-            </div>
-            <div>
-              <label><input type="checkbox" id="m_start_new" /> Start new segment (if you missed prior entry)</label>
-            </div>
-            <div style="display:flex;gap:8px;align-items:center">
-              <button id="addMileage" type="button">Add entry</button>
-              <button id="clearMileage" type="button" class="alt">Clear form</button>
-            </div>
-          </form>
-
-          <div class="stats" id="m_stats"></div>
-
-          <div style="margin-top:12px">
-            <table id="m_table">
-              <thead><tr><th>Date</th><th>Odo</th><th>Fuel L</th><th>Cost</th><th>Segment</th><th>Actions</th></tr></thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </section>
-
-        <!-- Maintenance tab -->
-        <section id="maintenanceTab" class="tabContent" style="display:none">
-          <form id="maintForm" class="grid cols-2" onsubmit="return false;">
-            <div>
-              <label>Date</label>
-              <input type="date" id="t_date" required />
-            </div>
-            <div>
-              <label>Description</label>
-              <input type="text" id="t_desc" placeholder="e.g. oil change" required />
-            </div>
-            <div>
-              <label>Amount</label>
-              <input type="number" id="t_amount" min="0" step="0.01" required />
-            </div>
-            <div style="display:flex;gap:8px;align-items:center">
-              <button id="addMaint" type="button">Add maintenance</button>
-              <button id="clearMaint" type="button" class="alt">Clear form</button>
-            </div>
-          </form>
-
-          <div class="stats" id="t_stats"></div>
-
-          <div style="margin-top:12px">
-            <table id="t_table">
-              <thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Actions</th></tr></thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </section>
-
-        <!-- Account tab -->
-        <section id="accountTab" class="tabContent" style="display:none">
-          <div id="authArea"></div>
-        </section>
-
-      </main>
-    </div>
-
-    <footer class="muted">Designed for GitHub Pages / static hosting • All data stays in your browser (localStorage). Use Export to backup.</footer>
-  </div>
+      <canvas id="maintChart" height="100"></canvas>
+      <table id="maintTable">
+        <thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Actions</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div id="maintTotals"></div>
+    </section>
+  </main>
 
   <script>
-  // ---------- Utilities ----------
-  const uid = () => 'id_' + Math.random().toString(36).slice(2,10);
-  const fmt = d => (new Date(d)).toLocaleDateString();
+    let currentUser = null;
+    let users = JSON.parse(localStorage.getItem('bikeUsers')||'{}');
 
-  // Simple secure-ish hashing for passwords using Web Crypto
-  async function hashPassword(username, password){
-    const enc = new TextEncoder();
-    const data = enc.encode(username + '|' + password);
-    const hash = await crypto.subtle.digest('SHA-256', data);
-    return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
-  }
+    function saveUsers(){ localStorage.setItem('bikeUsers', JSON.stringify(users)); }
 
-  // Storage helpers: store per user under 'bm_users' key
-  function loadAllUsers(){
-    try{ return JSON.parse(localStorage.getItem('bm_users')||'{}'); }catch(e){return{}} }
-  function saveAllUsers(data){ localStorage.setItem('bm_users', JSON.stringify(data)); }
-
-  function saveCurrentUserData(userObj){
-    const all = loadAllUsers(); all[userObj.username]=userObj; saveAllUsers(all);
-  }
-
-  function getCurrentUser(){
-    const cur = sessionStorage.getItem('bm_current');
-    if(!cur) return null; const all = loadAllUsers(); return all[cur] || null;
-  }
-
-  function setCurrentUser(username){ sessionStorage.setItem('bm_current', username); }
-  function clearCurrentUser(){ sessionStorage.removeItem('bm_current'); }
-
-  // ---------- App State and Rendering ----------
-  const tabs = document.querySelectorAll('.tab');
-  tabs.forEach(t=>t.addEventListener('click', ()=>{tabs.forEach(x=>x.classList.remove('active')); t.classList.add('active'); switchTab(t.dataset.tab);}));
-  function switchTab(name){ document.querySelectorAll('.tabContent').forEach(s=>s.style.display='none');
-    if(name==='mileage') document.getElementById('mileageTab').style.display='block';
-    if(name==='maintenance') document.getElementById('maintenanceTab').style.display='block';
-    if(name==='account') document.getElementById('accountTab').style.display='block';
-    renderUI();
-  }
-
-  // init demo user if no users exist (optional)
-  function ensureRoot(){ const all=loadAllUsers(); if(Object.keys(all).length===0){ all['demo']= { username:'demo', passHash:null, entries:[], maintenance:[] }; saveAllUsers(all);} }
-  ensureRoot();
-
-  // ---------- Auth UI ----------
-  const authArea = document.getElementById('authArea');
-  async function renderAuth(){ const cur = getCurrentUser(); const userBox = document.getElementById('userBox'); userBox.innerHTML='';
-    if(cur){ userBox.innerHTML = `<div class="muted">${cur.username}</div><button id="logoutBtn" class="alt">Logout</button>`; document.getElementById('logoutBtn').addEventListener('click', ()=>{ clearCurrentUser(); renderAuth(); renderUI(); });
-      authArea.innerHTML = `<div class="muted">Logged in as <strong>${cur.username}</strong></div><div style="margin-top:8px"><button id=exportUser class=alt>Export my data</button> <button id=wipeUser class=alt style='color:var(--danger)'>Delete all my data</button></div>`;
-      document.getElementById('exportUser').addEventListener('click', ()=> exportData(true));
-      document.getElementById('wipeUser').addEventListener('click', ()=>{ if(confirm('Delete all local data for this user? This cannot be undone unless you exported earlier.')){ const all=loadAllUsers(); delete all[cur.username]; saveAllUsers(all); clearCurrentUser(); renderAuth(); renderUI(); alert('Deleted.'); } });
-    } else {
-      userBox.innerHTML = `<button id="loginToggle" class="alt">Login / Register</button>`;
-      document.getElementById('loginToggle').addEventListener('click', ()=> renderLogin());
-
-      authArea.innerHTML = `<div class=muted>Not logged in. Create a local username/password to keep your data separate. Passwords are stored as hashes in localStorage.</div>`;
+    function register(){
+      const u = username.value.trim();
+      const p = password.value;
+      if(!u||!p) return;
+      if(users[u]){ alert('User exists'); return; }
+      users[u] = {password: p, mileage: [], maintenance: []};
+      saveUsers();
+      alert('Registered!');
     }
-  }
+    function login(){
+      const u=username.value.trim(), p=password.value;
+      if(users[u] && users[u].password===p){ currentUser=u; loginStatus.textContent='Logged in as '+u; render(); }
+      else loginStatus.textContent='Invalid login';
+    }
+    function logout(){ currentUser=null; loginStatus.textContent='Logged out'; }
 
-  async function renderLogin(){ authArea.innerHTML = `
-    <div class=grid>
-      <div><label>Username</label><input id=ui_user placeholder="username"></div>
-      <div><label>Password</label><input id=ui_pass type=password placeholder="password"></div>
-      <div style="display:flex;gap:8px"><button id=ui_login>Login</button><button id=ui_register class=alt>Register</button></div>
-      <div class=muted style='margin-top:8px'>Note: this is local-only. If you clear browser data, your accounts and entries will be lost unless exported.</div>
-    </div>`;
-    document.getElementById('ui_register').addEventListener('click', async ()=>{
-      const u = document.getElementById('ui_user').value.trim(); const p = document.getElementById('ui_pass').value;
-      if(!u||!p){alert('enter username & password');return}
-      const all = loadAllUsers(); if(all[u]){ if(!confirm('User exists. Overwrite?')) return; }
-      const ph = await hashPassword(u,p);
-      all[u] = { username:u, passHash:ph, entries:[], maintenance:[] };
-      saveAllUsers(all); setCurrentUser(u); renderAuth(); renderUI(); alert('Registered & logged in');
+    function showSection(id){
+      document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    function addMileage(){
+      if(!currentUser){ alert('Login first'); return; }
+      const d=mDate.value, o=+odo.value, fp=+fuelPrice.value, tc=+totalCost.value;
+      if(!d||!o||!fp||!tc) return;
+      const fuel = tc/fp;
+      users[currentUser].mileage.push({date:d, odo:o, fuelPrice:fp, totalCost:tc, fuel:fuel, newSegment:newSegment.checked});
+      saveUsers(); renderMileage();
+    }
+
+    function addMaintenance(){
+      if(!currentUser){ alert('Login first'); return; }
+      const d=maintDate.value, desc=maintDesc.value, amt=+maintAmt.value;
+      if(!d||!desc||!amt) return;
+      users[currentUser].maintenance.push({date:d, desc:desc, amount:amt});
+      saveUsers(); renderMaintenance();
+    }
+
+    function render(){ renderMileage(); renderMaintenance(); }
+
+    function renderMileage(){
+      const tbody=document.querySelector('#mileageTable tbody'); tbody.innerHTML='';
+      if(!currentUser) return;
+      users[currentUser].mileage.forEach((m,i)=>{
+        tbody.innerHTML+=`<tr><td>${m.date}</td><td>${m.odo}</td><td>${m.fuelPrice}</td><td>${m.totalCost}</td><td>${m.fuel.toFixed(2)}</td><td class='actions'><button onclick="delMileage(${i})">Del</button></td></tr>`;
+      });
+    }
+    function renderMaintenance(){
+      const tbody=document.querySelector('#maintTable tbody'); tbody.innerHTML='';
+      if(!currentUser) return;
+      users[currentUser].maintenance.forEach((m,i)=>{
+        tbody.innerHTML+=`<tr><td>${m.date}</td><td>${m.desc}</td><td>${m.amount}</td><td><button onclick="delMaint(${i})">Del</button></td></tr>`;
+      });
+      drawChart();
+    }
+    function delMileage(i){ users[currentUser].mileage.splice(i,1); saveUsers(); renderMileage(); }
+    function delMaint(i){ users[currentUser].maintenance.splice(i,1); saveUsers(); renderMaintenance(); }
+
+    let chart;
+    function drawChart(){
+      const ctx=document.getElementById('maintChart').getContext('2d');
+      if(chart) chart.destroy();
+      const dataByMonth={};
+      users[currentUser].maintenance.forEach(m=>{
+        const month=m.date.substring(0,7);
+        dataByMonth[month]=(dataByMonth[month]||0)+m.amount;
+      });
+      chart=new Chart(ctx,{type:'bar',data:{labels:Object.keys(dataByMonth),datasets:[{label:'Monthly Maintenance',data:Object.values(dataByMonth)}]},options:{responsive:true}});
+    }
+
+    function exportCSV(){
+      if(!currentUser) return;
+      let csv='Type,Date,Description/Odo,FuelPrice,TotalCost/Amount\\n';
+      users[currentUser].mileage.forEach(m=>{csv+=`Mileage,${m.date},${m.odo},${m.fuelPrice},${m.totalCost}\\n`;});
+      users[currentUser].maintenance.forEach(m=>{csv+=`Maintenance,${m.date},${m.desc},,${m.amount}\\n`;});
+      const blob=new Blob([csv],{type:'text/csv'});
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='data.csv'; a.click();
+    }
+
+    function backupAll(){
+      const blob=new Blob([JSON.stringify(users)],{type:'application/json'});
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='backup.json'; a.click();
+    }
+    function importAll(e){
+      const file=e.target.files[0];
+      const reader=new FileReader();
+      reader.onload=()=>{ users=JSON.parse(reader.result); saveUsers(); alert('Imported!'); render(); };
+      reader.readAsText(file);
+    }
+
+    // Set date inputs default today
+    document.addEventListener('DOMContentLoaded',()=>{
+      const today=new Date().toISOString().split('T')[0];
+      mDate.value=today;
+      maintDate.value=today;
     });
-    document.getElementById('ui_login').addEventListener('click', async ()=>{
-      const u = document.getElementById('ui_user').value.trim(); const p = document.getElementById('ui_pass').value;
-      if(!u||!p){alert('enter username & password');return}
-      const all = loadAllUsers(); if(!all[u]){alert('user not found');return}
-      const ph = await hashPassword(u,p);
-      if(ph !== all[u].passHash){alert('wrong password');return}
-      setCurrentUser(u); renderAuth(); renderUI(); alert('Logged in');
-    });
-  }
-
-  // ---------- Mileage & Maintenance Logic ----------
-  function getEntries(){ const cur = getCurrentUser(); return cur? cur.entries : (loadAllUsers()['demo'].entries || []); }
-  function getMaintenance(){ const cur = getCurrentUser(); return cur? cur.maintenance : (loadAllUsers()['demo'].maintenance || []); }
-  function updateEntries(arr){ const cur = getCurrentUser(); if(cur){ cur.entries = arr; saveCurrentUserData(cur); } else { const all=loadAllUsers(); all['demo'].entries = arr; saveAllUsers(all);} }
-  function updateMaintenance(arr){ const cur = getCurrentUser(); if(cur){ cur.maintenance = arr; saveCurrentUserData(cur); } else { const all=loadAllUsers(); all['demo'].maintenance = arr; saveAllUsers(all);} }
-
-  // calculate segments and stats
-  function computeMileageStats(){ const entries = [...getEntries()].sort((a,b)=> new Date(a.date) - new Date(b.date));
-    let totalFuel = 0, totalCost = 0, totalKm = 0; let segments = [];
-    let lastOdo = null; let segKm=0, segFuel=0, segCost=0; let segStart=null;
-    for(const e of entries){ const fuel = Number(e.fuel_amount||0); const cost=Number(e.total_cost||0); totalFuel+=fuel; totalCost+=cost;
-      if(e.startNew){ // begin a new segment
-        if(segStart!==null) segments.push({start:segStart, km:segKm, fuel:segFuel, cost:segCost});
-        segStart = e.date; segKm=0; segFuel=fuel; segCost=cost; lastOdo = e.odo; continue;
-      }
-      if(segStart===null){ segStart = e.date; }
-      if(lastOdo!==null && Number(e.odo) >= Number(lastOdo)){
-        const dkm = Number(e.odo) - Number(lastOdo);
-        segKm += dkm; totalKm += dkm; lastOdo = Number(e.odo);
-      } else {
-        // if odo decreased or missing, we treat as new segment automatically
-        if(lastOdo!==null){ segments.push({start:segStart, km:segKm, fuel:segFuel, cost:segCost}); }
-        segStart = e.date; segKm=0; lastOdo = Number(e.odo);
-      }
-      segFuel += fuel; segCost += cost;
-    }
-    if(segStart!==null) segments.push({start:segStart, km:segKm, fuel:segFuel, cost:segCost});
-
-    const maintSum = getMaintenance().reduce((s,m)=>s+Number(m.amount||0),0);
-    const grandCost = totalCost + maintSum;
-    const costPerKm = totalKm>0? (grandCost/totalKm) : 0;
-    return { totalFuel, totalCost, totalKm, maintSum, grandCost, costPerKm, segments };
-  }
-
-  function renderUI(){ renderAuth(); renderMileageTable(); renderMaintTable(); renderStats(); }
-
-  // ---------- Mileage table ----------
-  function renderMileageTable(){ const tbody = document.querySelector('#m_table tbody'); tbody.innerHTML='';
-    const arr = [...getEntries()].sort((a,b)=> new Date(b.date) - new Date(a.date));
-    for(const e of arr){ const tr = document.createElement('tr'); tr.innerHTML = `<td>${e.date}</td><td>${e.odo}</td><td>${Number(e.fuel_amount).toFixed(3)}</td><td>${Number(e.total_cost).toFixed(2)}</td><td>${e.startNew? 'NewSeg':''}</td><td class='actions'></td>`;
-      const a = tr.querySelector('.actions'); const edit = document.createElement('button'); edit.className='alt'; edit.textContent='Edit'; edit.addEventListener('click', ()=> fillMileageForm(e));
-      const del = document.createElement('button'); del.className='alt'; del.style.color='var(--danger)'; del.textContent='Delete'; del.addEventListener('click', ()=>{ if(confirm('Delete this entry?')){ const newArr = getEntries().filter(x=>x.id!==e.id); updateEntries(newArr); renderUI(); } });
-      a.appendChild(edit); a.appendChild(del);
-      tbody.appendChild(tr);
-    }
-  }
-
-  // fill form for edit
-  function fillMileageForm(e){ document.getElementById('m_date').value=e.date; document.getElementById('m_odo').value=e.odo; document.getElementById('m_fuel_price').value=e.fuel_price; document.getElementById('m_total_cost').value=e.total_cost; document.getElementById('m_start_new').checked=!!e.startNew;
-    document.getElementById('addMileage').textContent='Update entry'; document.getElementById('addMileage').dataset.editId = e.id;
-  }
-
-  // add or update
-  document.getElementById('addMileage').addEventListener('click', ()=>{
-    const date = document.getElementById('m_date').value; const odo = Number(document.getElementById('m_odo').value);
-    const fuel_price = Number(document.getElementById('m_fuel_price').value); const total_cost = Number(document.getElementById('m_total_cost').value);
-    const startNew = document.getElementById('m_start_new').checked; if(!date||isNaN(odo)) { alert('fill date & odo'); return }
-    const fuel_amount = fuel_price>0? (total_cost / fuel_price) : 0;
-    const editId = document.getElementById('addMileage').dataset.editId;
-    const entries = getEntries();
-    if(editId){ const idx = entries.findIndex(x=>x.id===editId); if(idx>-1){ entries[idx] = { ...entries[idx], date, odo, fuel_price, total_cost, fuel_amount, startNew }; updateEntries(entries); document.getElementById('addMileage').textContent='Add entry'; delete document.getElementById('addMileage').dataset.editId; clearMileageForm(); renderUI(); return; } }
-    const newEntry = { id: uid(), date, odo, fuel_price, total_cost, fuel_amount, startNew };
-    entries.push(newEntry); updateEntries(entries); clearMileageForm(); renderUI();
-  });
-  document.getElementById('clearMileage').addEventListener('click', clearMileageForm);
-  function clearMileageForm(){ document.getElementById('mileageForm').reset(); document.getElementById('addMileage').textContent='Add entry'; delete document.getElementById('addMileage').dataset.editId; }
-
-  // ---------- Maintenance table ----------
-  function renderMaintTable(){ const tbody = document.querySelector('#t_table tbody'); tbody.innerHTML='';
-    const arr = [...getMaintenance()].sort((a,b)=> new Date(b.date) - new Date(a.date));
-    for(const m of arr){ const tr = document.createElement('tr'); tr.innerHTML=`<td>${m.date}</td><td>${m.desc}</td><td>${Number(m.amount).toFixed(2)}</td><td class='actions'></td>`;
-      const a = tr.querySelector('.actions'); const edit = document.createElement('button'); edit.className='alt'; edit.textContent='Edit'; edit.addEventListener('click', ()=> fillMaintForm(m));
-      const del = document.createElement('button'); del.className='alt'; del.style.color='var(--danger)'; del.textContent='Delete'; del.addEventListener('click', ()=>{ if(confirm('Delete this maintenance item?')){ const arr=getMaintenance().filter(x=>x.id!==m.id); updateMaintenance(arr); renderUI(); } });
-      a.appendChild(edit); a.appendChild(del);
-      tbody.appendChild(tr);
-    }
-  }
-  function fillMaintForm(m){ document.getElementById('t_date').value=m.date; document.getElementById('t_desc').value=m.desc; document.getElementById('t_amount').value=m.amount; document.getElementById('addMaint').textContent='Update'; document.getElementById('addMaint').dataset.editId=m.id; }
-  document.getElementById('addMaint').addEventListener('click', ()=>{
-    const date = document.getElementById('t_date').value; const desc = document.getElementById('t_desc').value; const amount = Number(document.getElementById('t_amount').value);
-    if(!date||!desc||isNaN(amount)){alert('fill all fields');return}
-    const editId = document.getElementById('addMaint').dataset.editId; const arr = getMaintenance();
-    if(editId){ const idx = arr.findIndex(x=>x.id===editId); if(idx>-1){ arr[idx] = {...arr[idx], date, desc, amount}; updateMaintenance(arr); document.getElementById('addMaint').textContent='Add maintenance'; delete document.getElementById('addMaint').dataset.editId; clearMaintForm(); renderUI(); return; } }
-    arr.push({ id: uid(), date, desc, amount }); updateMaintenance(arr); clearMaintForm(); renderUI();
-  });
-  document.getElementById('clearMaint').addEventListener('click', clearMaintForm);
-  function clearMaintForm(){ document.getElementById('maintForm').reset(); document.getElementById('addMaint').textContent='Add maintenance'; delete document.getElementById('addMaint').dataset.editId; }
-
-  // ---------- Stats ----------
-  function renderStats(){ const s = computeMileageStats(); const ms = document.getElementById('m_stats'); ms.innerHTML = '';
-    const el = (t,v) => `<div class=stat><div class=muted>${t}</div><div style='font-weight:600;margin-top:6px'>${v}</div></div>`;
-    ms.insertAdjacentHTML('beforeend', el('Total fuel (L)', s.totalFuel.toFixed(3)));
-    ms.insertAdjacentHTML('beforeend', el('Total fuel cost', s.totalCost.toFixed(2)));
-    ms.insertAdjacentHTML('beforeend', el('Total distance (km)', s.totalKm.toFixed(1)));
-    ms.insertAdjacentHTML('beforeend', el('Maintenance sum', s.maintSum.toFixed(2)));
-    ms.insertAdjacentHTML('beforeend', el('Grand cost (fuel+maint)', s.grandCost.toFixed(2)));
-    ms.insertAdjacentHTML('beforeend', el('Cost per km', s.costPerKm? s.costPerKm.toFixed(3) : '—'));
-
-    const ts = document.getElementById('t_stats'); ts.innerHTML='';
-    // monthly & yearly totals
-    const maint = getMaintenance();
-    const byMonth = {};
-    const byYear = {};
-    for(const m of maint){ const dt = new Date(m.date); const k = dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0'); byMonth[k] = (byMonth[k]||0)+Number(m.amount);
-      const ky = dt.getFullYear(); byYear[ky] = (byYear[ky]||0)+Number(m.amount);
-    }
-    ts.insertAdjacentHTML('beforeend', el('Maintenance total', s.maintSum.toFixed(2)));
-    ts.insertAdjacentHTML('beforeend', el('Monthly example (latest)', Object.keys(byMonth).length? (Object.entries(byMonth).sort().pop()[1].toFixed(2)) : '0'));
-    ts.insertAdjacentHTML('beforeend', el('Yearly example (latest)', Object.keys(byYear).length? (Object.entries(byYear).sort().pop()[1].toFixed(2)) : '0'));
-    ts.insertAdjacentHTML('beforeend', el('Cost per km (shared)', s.costPerKm? s.costPerKm.toFixed(3) : '—'));
-  }
-
-  // ---------- Export / Import ----------
-  function exportData(userOnly=false){ const cur = getCurrentUser(); const all = loadAllUsers(); if(userOnly){ if(!cur){ alert('login to export your user data'); return } const data = {}; data[cur.username] = all[cur.username]; const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'}); const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=`bike-data-${cur.username}.json`; a.click(); URL.revokeObjectURL(url); return; }
-    const blob = new Blob([JSON.stringify(all, null, 2)], {type:'application/json'}); const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='bike-data-all.json'; a.click(); URL.revokeObjectURL(url);
-  }
-  document.getElementById('exportBtn').addEventListener('click', ()=> exportData(false));
-  document.getElementById('importBtn').addEventListener('click', ()=> document.getElementById('importFile').click());
-  document.getElementById('importFile').addEventListener('change', function(){ const f=this.files[0]; if(!f) return; const r=new FileReader(); r.onload = e=>{ try{ const obj = JSON.parse(e.target.result); const all = loadAllUsers(); // merge safely
-      for(const k of Object.keys(obj)){ all[k] = obj[k]; }
-      saveAllUsers(all); alert('Import complete. If any imported users match current username, data overwritten.'); renderUI(); }catch(err){alert('invalid file');} }; r.readAsText(f); });
-
-  // initial render
-  renderUI();
   </script>
 </body>
 </html>
