@@ -308,24 +308,3 @@ self.addEventListener('fetch', (e)=>{
 ================= END manifest.webmanifest ============= */
 
 
-/* ============== OPTIONAL: Google Apps Script backend (apps-script.gs) ==============
-1) Create a Google Sheet with header row: id, date, odo, liters, price, station, notes
-2) Extensions → Apps Script → paste this code, then Deploy → New deployment → type: Web app
-   - Execute as: Me, Who has access: Anyone (or Anyone with link)
-   - Copy the Web App URL and place it into SYNC_ENDPOINT below in index.html (add a fetch call in save())
-3) The script appends rows on POST and returns JSON. You own the data in your Google account.
-
-function doPost(e){
-  try{
-    const body = JSON.parse(e.postData.contents);
-    const sheet = SpreadsheetApp.getActiveSheet();
-    const rows = body.records || [body];
-    rows.forEach(r=> sheet.appendRow([r.id, r.date, r.odo, r.liters, r.price, r.station, r.notes]));
-    return ContentService.createTextOutput(JSON.stringify({ok:true,count:rows.length}))
-      .setMimeType(ContentService.MimeType.JSON);
-  }catch(err){
-    return ContentService.createTextOutput(JSON.stringify({ok:false,error:String(err)}))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
-================= END apps-script.gs ============= */
