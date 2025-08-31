@@ -1,310 +1,360 @@
-<!--
-Bike Mileage Tracker (PWA-ready)
-- Local-first (IndexedDB via localforage-like minimal wrapper) – here we use localStorage for simplicity.
-- Optional cloud sync via Google Sheets (Apps Script) – instructions below.
-- Works offline; add the service worker + manifest files provided in this doc for PWA support.
-
-FILES IN THIS PROJECT
-1) index.html (this file)
-2) sw.js (service worker)
-3) manifest.webmanifest
-4) OPTIONAL: apps-script.gs (Google Apps Script backend)
--->
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Bike Mileage Tracker</title>
-  <link rel="manifest" href="./manifest.webmanifest">
-  <meta name="theme-color" content="#0ea5e9"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Bike Mileage Tracker — Local</title>
   <style>
-    :root{--bg:#0b1220;--card:#111827;--muted:#94a3b8;--accent:#0ea5e9;--text:#e5e7eb;--ok:#10b981;--warn:#f59e0b;--err:#ef4444}
-    *{box-sizing:border-box} body{margin:0;font-family:system-ui,Segoe UI,Roboto,Ubuntu,Helvetica,Arial,sans-serif;background:linear-gradient(120deg,#0b1220,#0b1b2e);color:var(--text)}
-    header{position:sticky;top:0;background:#0b1423d9;backdrop-filter:blur(6px);border-bottom:1px solid #1f2937;padding:12px 16px;display:flex;gap:10px;align-items:center;z-index:5}
-    header h1{font-size:18px;margin:0;font-weight:700}
-    .wrap{max-width:920px;margin:20px auto;padding:0 16px}
-    .grid{display:grid;grid-template-columns:1fr;gap:12px}
-    @media(min-width:860px){.grid{grid-template-columns:400px 1fr}}
-    .card{background:var(--card);border:1px solid #1f2937;border-radius:16px;box-shadow:0 6px 30px #00000040}
-    .pad{padding:16px}
-    label{font-size:12px;color:var(--muted)}
-    input,select,button,textarea{width:100%;padding:12px;border-radius:12px;border:1px solid #1f2937;background:#0b1323;color:var(--text)}
-    input:focus,textarea:focus,select:focus{outline:2px solid var(--accent);border-color:transparent}
-    .row{display:flex;gap:10px}
-    .row>*{flex:1}
-    .btn{cursor:pointer;font-weight:600}
-    .btn.primary{background:var(--accent);color:#051119;border:none}
-    .btn.ghost{background:transparent;border:1px dashed #334155}
-    .stat{display:flex;align-items:center;gap:10px;padding:10px 0}
-    .stat .v{font-size:22px;font-weight:800}
-    table{width:100%;border-collapse:collapse}
-    th,td{padding:10px;border-bottom:1px solid #1f2937;font-size:14px;text-align:left}
-    th{color:var(--muted)}
-    .pill{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;border:1px solid #1f2937}
-    .ok{color:var(--ok)} .warn{color:var(--warn)} .err{color:var(--err)}
-    .right{display:flex;gap:8px;margin-left:auto}
-    .muted{color:var(--muted)}
-    footer{padding:24px;text-align:center;color:var(--muted)}
-    .small{font-size:12px}
+    :root{
+      --bg:#0b0f14; --card:#0f1720; --muted:#98a0ab; --accent:#7c3aed; --accent-2:#06b6d4; --danger:#ef4444; --glass: rgba(255,255,255,0.03);
+      --radius:12px; --gap:14px; font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:linear-gradient(180deg,var(--bg),#071018);color:#e6eef6; -webkit-font-smoothing:antialiased; padding:18px}
+    .app{max-width:980px;margin:0 auto}
+    header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:18px}
+    h1{font-size:18px;margin:0}
+    .card{background:linear-gradient(180deg,var(--card),rgba(12,16,22,0.9));border-radius:var(--radius);padding:14px;box-shadow:0 6px 18px rgba(2,6,23,0.6)}
+    nav.tabs{display:flex;gap:8px}
+    .tab{padding:8px 12px;border-radius:10px;background:transparent;color:var(--muted);cursor:pointer}
+    .tab.active{background:linear-gradient(90deg,rgba(124,58,237,0.16),rgba(6,182,212,0.08));color:#fff}
+    .controls{display:flex;gap:8px;align-items:center}
+    input,select,textarea{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:10px;border-radius:10px;color:inherit;width:100%}
+    label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
+    .grid{display:grid;gap:10px}
+    .grid.cols-2{grid-template-columns:1fr 1fr}
+    .muted{color:var(--muted);font-size:13px}
+    button{background:var(--accent);border:none;padding:10px 12px;border-radius:10px;color:white;cursor:pointer}
+    button.alt{background:transparent;border:1px solid rgba(255,255,255,0.06)}
+    .danger{background:var(--danger)}
+    table{width:100%;border-collapse:collapse;margin-top:10px}
+    th,td{padding:8px;border-bottom:1px dashed rgba(255,255,255,0.03);text-align:left;font-size:13px}
+    small.hint{color:var(--muted);display:block;margin-top:6px}
+    .mobile-row{display:flex;gap:8px}
+    .actions{display:flex;gap:6px}
+    .stats{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .stat{background:var(--glass);padding:10px;border-radius:10px;min-width:140px}
+    footer{margin-top:18px;text-align:center;color:var(--muted);font-size:13px}
+    /* responsive */
+    @media (max-width:720px){
+      .grid.cols-2{grid-template-columns:1fr}
+      header{flex-direction:column;align-items:flex-start;gap:10px}
+    }
   </style>
 </head>
 <body>
-<header>
-  <h1>🏍️ Bike Mileage Tracker</h1>
-  <div class="right">
-    <button id="btnExport" class="btn pill">Export JSON</button>
-    <label class="pill" style="padding:0;display:flex;align-items:center;gap:8px;cursor:pointer">
-      <input id="fileImport" type="file" accept="application/json" style="display:none"/>
-      <span class="muted" style="padding:6px 10px">Import</span>
-    </label>
-  </div>
-</header>
+  <div class="app">
+    <header>
+      <div>
+        <h1>🏍️ Bike Mileage Tracker</h1>
+        <div class="muted">Local-only, export/import, dark UI — works as a single static file for GitHub Pages</div>
+      </div>
+      <div class="controls">
+        <div id="userBox"></div>
+        <button id="exportBtn" class="alt">Export</button>
+        <input id="importFile" type="file" accept="application/json" style="display:none">
+        <button id="importBtn" class="alt">Import</button>
+      </div>
+    </header>
 
-<div class="wrap grid">
-  <section class="card pad">
-    <h2 style="margin-top:0">➕ New Fill‑up / Ride</h2>
-    <form id="form">
-      <div class="row">
-        <div>
-          <label>Date & time</label>
-          <input type="datetime-local" id="date" required />
-        </div>
-        <div>
-          <label>Odometer (km)</label>
-          <input type="number" id="odo" inputmode="decimal" placeholder="e.g. 18250" required />
-        </div>
-      </div>
-      <div class="row">
-        <div>
-          <label>Fuel added (L)</label>
-          <input type="number" id="liters" inputmode="decimal" step="0.01" placeholder="e.g. 7.20" required />
-        </div>
-        <div>
-          <label>Price (৳) — optional</label>
-          <input type="number" id="price" inputmode="decimal" step="0.01" placeholder="e.g. 720" />
-        </div>
-      </div>
-      <div class="row">
-        <div>
-          <label>Station / Place</label>
-          <input type="text" id="station" placeholder="e.g. Padma Fuel, Mirpur" />
-        </div>
-        <div>
-          <label>Notes</label>
-          <input type="text" id="notes" placeholder="e.g. City ride, AC pump" />
-        </div>
-      </div>
-      <div class="row" style="align-items:center">
-        <button class="btn primary" type="submit">Save</button>
-        <button class="btn ghost" type="button" id="btnClear">Clear All (local)</button>
-      </div>
-    </form>
+    <div class="card">
+      <nav class="tabs" role="tablist">
+        <button class="tab active" data-tab="mileage">Mileage</button>
+        <button class="tab" data-tab="maintenance">Maintenance</button>
+        <button class="tab" data-tab="account">Account</button>
+      </nav>
 
-    <div class="row" style="margin-top:10px">
-      <div class="stat">
-        <span class="muted">Avg km/L:</span>
-        <span class="v" id="avgKmL">—</span>
-      </div>
-      <div class="stat">
-        <span class="muted">Avg L/100km:</span>
-        <span class="v" id="avgL100">—</span>
-      </div>
-      <div class="stat">
-        <span class="muted">৳/km:</span>
-        <span class="v" id="costPerKm">—</span>
-      </div>
+      <main id="mainArea">
+        <!-- Mileage tab -->
+        <section id="mileageTab" class="tabContent">
+          <form id="mileageForm" class="grid cols-2" onsubmit="return false;">
+            <div>
+              <label>Date</label>
+              <input type="date" id="m_date" required />
+            </div>
+            <div>
+              <label>Odometer (km)</label>
+              <input type="number" id="m_odo" min="0" step="1" required />
+            </div>
+            <div>
+              <label>Fuel price (per L)</label>
+              <input type="number" id="m_fuel_price" min="0" step="0.01" required />
+            </div>
+            <div>
+              <label>Total cost (currency)</label>
+              <input type="number" id="m_total_cost" min="0" step="0.01" required />
+              <small class="hint">Fuel amount will be auto-calculated = total cost / fuel price</small>
+            </div>
+            <div>
+              <label><input type="checkbox" id="m_start_new" /> Start new segment (if you missed prior entry)</label>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button id="addMileage" type="button">Add entry</button>
+              <button id="clearMileage" type="button" class="alt">Clear form</button>
+            </div>
+          </form>
+
+          <div class="stats" id="m_stats"></div>
+
+          <div style="margin-top:12px">
+            <table id="m_table">
+              <thead><tr><th>Date</th><th>Odo</th><th>Fuel L</th><th>Cost</th><th>Segment</th><th>Actions</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Maintenance tab -->
+        <section id="maintenanceTab" class="tabContent" style="display:none">
+          <form id="maintForm" class="grid cols-2" onsubmit="return false;">
+            <div>
+              <label>Date</label>
+              <input type="date" id="t_date" required />
+            </div>
+            <div>
+              <label>Description</label>
+              <input type="text" id="t_desc" placeholder="e.g. oil change" required />
+            </div>
+            <div>
+              <label>Amount</label>
+              <input type="number" id="t_amount" min="0" step="0.01" required />
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button id="addMaint" type="button">Add maintenance</button>
+              <button id="clearMaint" type="button" class="alt">Clear form</button>
+            </div>
+          </form>
+
+          <div class="stats" id="t_stats"></div>
+
+          <div style="margin-top:12px">
+            <table id="t_table">
+              <thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Actions</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Account tab -->
+        <section id="accountTab" class="tabContent" style="display:none">
+          <div id="authArea"></div>
+        </section>
+
+      </main>
     </div>
-  </section>
 
-  <section class="card pad">
-    <h2 style="margin-top:0">📜 History</h2>
-    <div class="small muted" style="margin-bottom:8px">Tap any cell to edit in-place. Changes auto-save.</div>
-    <table>
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Odo</th>
-          <th>L</th>
-          <th>৳</th>
-          <th>km/L</th>
-          <th>L/100</th>
-          <th>৳/km</th>
-          <th>Station</th>
-          <th>Notes</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="rows"></tbody>
-    </table>
-  </section>
-</div>
+    <footer class="muted">Designed for GitHub Pages / static hosting • All data stays in your browser (localStorage). Use Export to backup.</footer>
+  </div>
 
-<footer class="small">Made for riders. Works offline. Keep backups via Export JSON. Optional cloud sync using Google Sheets below.</footer>
+  <script>
+  // ---------- Utilities ----------
+  const uid = () => 'id_' + Math.random().toString(36).slice(2,10);
+  const fmt = d => (new Date(d)).toLocaleDateString();
 
-<script>
-  // ---------- Storage helpers (localStorage)
-  const KEY = 'bike.mileage.v1';
-  const $ = sel => document.querySelector(sel);
+  // Simple secure-ish hashing for passwords using Web Crypto
+  async function hashPassword(username, password){
+    const enc = new TextEncoder();
+    const data = enc.encode(username + '|' + password);
+    const hash = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
 
-  const load = () => {
-    try{ return JSON.parse(localStorage.getItem(KEY) || '[]'); }catch{ return [] }
-  };
-  const save = (arr) => localStorage.setItem(KEY, JSON.stringify(arr));
+  // Storage helpers: store per user under 'bm_users' key
+  function loadAllUsers(){
+    try{ return JSON.parse(localStorage.getItem('bm_users')||'{}'); }catch(e){return{}} }
+  function saveAllUsers(data){ localStorage.setItem('bm_users', JSON.stringify(data)); }
 
-  // ---------- Derived metrics
-  const computeRow = (data, i, all) => {
-    // km/L uses distance since previous odo
-    const prev = all[i-1];
-    let dist = null, kml = null, l100 = null, costPerKm = null;
-    if (prev && isFinite(data.odo) && isFinite(prev.odo) && isFinite(data.liters) && data.liters>0) {
-      dist = data.odo - prev.odo;
-      if (dist>0) {
-        kml = dist / data.liters;
-        l100 = (100 / kml);
-        if (isFinite(data.price) && data.price>0) costPerKm = data.price / dist;
+  function saveCurrentUserData(userObj){
+    const all = loadAllUsers(); all[userObj.username]=userObj; saveAllUsers(all);
+  }
+
+  function getCurrentUser(){
+    const cur = sessionStorage.getItem('bm_current');
+    if(!cur) return null; const all = loadAllUsers(); return all[cur] || null;
+  }
+
+  function setCurrentUser(username){ sessionStorage.setItem('bm_current', username); }
+  function clearCurrentUser(){ sessionStorage.removeItem('bm_current'); }
+
+  // ---------- App State and Rendering ----------
+  const tabs = document.querySelectorAll('.tab');
+  tabs.forEach(t=>t.addEventListener('click', ()=>{tabs.forEach(x=>x.classList.remove('active')); t.classList.add('active'); switchTab(t.dataset.tab);}));
+  function switchTab(name){ document.querySelectorAll('.tabContent').forEach(s=>s.style.display='none');
+    if(name==='mileage') document.getElementById('mileageTab').style.display='block';
+    if(name==='maintenance') document.getElementById('maintenanceTab').style.display='block';
+    if(name==='account') document.getElementById('accountTab').style.display='block';
+    renderUI();
+  }
+
+  // init demo user if no users exist (optional)
+  function ensureRoot(){ const all=loadAllUsers(); if(Object.keys(all).length===0){ all['demo']= { username:'demo', passHash:null, entries:[], maintenance:[] }; saveAllUsers(all);} }
+  ensureRoot();
+
+  // ---------- Auth UI ----------
+  const authArea = document.getElementById('authArea');
+  async function renderAuth(){ const cur = getCurrentUser(); const userBox = document.getElementById('userBox'); userBox.innerHTML='';
+    if(cur){ userBox.innerHTML = `<div class="muted">${cur.username}</div><button id="logoutBtn" class="alt">Logout</button>`; document.getElementById('logoutBtn').addEventListener('click', ()=>{ clearCurrentUser(); renderAuth(); renderUI(); });
+      authArea.innerHTML = `<div class="muted">Logged in as <strong>${cur.username}</strong></div><div style="margin-top:8px"><button id=exportUser class=alt>Export my data</button> <button id=wipeUser class=alt style='color:var(--danger)'>Delete all my data</button></div>`;
+      document.getElementById('exportUser').addEventListener('click', ()=> exportData(true));
+      document.getElementById('wipeUser').addEventListener('click', ()=>{ if(confirm('Delete all local data for this user? This cannot be undone unless you exported earlier.')){ const all=loadAllUsers(); delete all[cur.username]; saveAllUsers(all); clearCurrentUser(); renderAuth(); renderUI(); alert('Deleted.'); } });
+    } else {
+      userBox.innerHTML = `<button id="loginToggle" class="alt">Login / Register</button>`;
+      document.getElementById('loginToggle').addEventListener('click', ()=> renderLogin());
+
+      authArea.innerHTML = `<div class=muted>Not logged in. Create a local username/password to keep your data separate. Passwords are stored as hashes in localStorage.</div>`;
+    }
+  }
+
+  async function renderLogin(){ authArea.innerHTML = `
+    <div class=grid>
+      <div><label>Username</label><input id=ui_user placeholder="username"></div>
+      <div><label>Password</label><input id=ui_pass type=password placeholder="password"></div>
+      <div style="display:flex;gap:8px"><button id=ui_login>Login</button><button id=ui_register class=alt>Register</button></div>
+      <div class=muted style='margin-top:8px'>Note: this is local-only. If you clear browser data, your accounts and entries will be lost unless exported.</div>
+    </div>`;
+    document.getElementById('ui_register').addEventListener('click', async ()=>{
+      const u = document.getElementById('ui_user').value.trim(); const p = document.getElementById('ui_pass').value;
+      if(!u||!p){alert('enter username & password');return}
+      const all = loadAllUsers(); if(all[u]){ if(!confirm('User exists. Overwrite?')) return; }
+      const ph = await hashPassword(u,p);
+      all[u] = { username:u, passHash:ph, entries:[], maintenance:[] };
+      saveAllUsers(all); setCurrentUser(u); renderAuth(); renderUI(); alert('Registered & logged in');
+    });
+    document.getElementById('ui_login').addEventListener('click', async ()=>{
+      const u = document.getElementById('ui_user').value.trim(); const p = document.getElementById('ui_pass').value;
+      if(!u||!p){alert('enter username & password');return}
+      const all = loadAllUsers(); if(!all[u]){alert('user not found');return}
+      const ph = await hashPassword(u,p);
+      if(ph !== all[u].passHash){alert('wrong password');return}
+      setCurrentUser(u); renderAuth(); renderUI(); alert('Logged in');
+    });
+  }
+
+  // ---------- Mileage & Maintenance Logic ----------
+  function getEntries(){ const cur = getCurrentUser(); return cur? cur.entries : (loadAllUsers()['demo'].entries || []); }
+  function getMaintenance(){ const cur = getCurrentUser(); return cur? cur.maintenance : (loadAllUsers()['demo'].maintenance || []); }
+  function updateEntries(arr){ const cur = getCurrentUser(); if(cur){ cur.entries = arr; saveCurrentUserData(cur); } else { const all=loadAllUsers(); all['demo'].entries = arr; saveAllUsers(all);} }
+  function updateMaintenance(arr){ const cur = getCurrentUser(); if(cur){ cur.maintenance = arr; saveCurrentUserData(cur); } else { const all=loadAllUsers(); all['demo'].maintenance = arr; saveAllUsers(all);} }
+
+  // calculate segments and stats
+  function computeMileageStats(){ const entries = [...getEntries()].sort((a,b)=> new Date(a.date) - new Date(b.date));
+    let totalFuel = 0, totalCost = 0, totalKm = 0; let segments = [];
+    let lastOdo = null; let segKm=0, segFuel=0, segCost=0; let segStart=null;
+    for(const e of entries){ const fuel = Number(e.fuel_amount||0); const cost=Number(e.total_cost||0); totalFuel+=fuel; totalCost+=cost;
+      if(e.startNew){ // begin a new segment
+        if(segStart!==null) segments.push({start:segStart, km:segKm, fuel:segFuel, cost:segCost});
+        segStart = e.date; segKm=0; segFuel=fuel; segCost=cost; lastOdo = e.odo; continue;
       }
+      if(segStart===null){ segStart = e.date; }
+      if(lastOdo!==null && Number(e.odo) >= Number(lastOdo)){
+        const dkm = Number(e.odo) - Number(lastOdo);
+        segKm += dkm; totalKm += dkm; lastOdo = Number(e.odo);
+      } else {
+        // if odo decreased or missing, we treat as new segment automatically
+        if(lastOdo!==null){ segments.push({start:segStart, km:segKm, fuel:segFuel, cost:segCost}); }
+        segStart = e.date; segKm=0; lastOdo = Number(e.odo);
+      }
+      segFuel += fuel; segCost += cost;
     }
-    return {dist,kml,l100,costPerKm};
-  };
+    if(segStart!==null) segments.push({start:segStart, km:segKm, fuel:segFuel, cost:segCost});
 
-  const fmt = (v, d=2) => (v==null||!isFinite(v))? '—' : v.toFixed(d);
-
-  // ---------- Render
-  const rowsEl = $('#rows');
-  function render(){
-    const data = load().sort((a,b)=> new Date(a.date) - new Date(b.date));
-    rowsEl.innerHTML = '';
-    let kmls=[], l100s=[], costKm=[];
-    data.forEach((r,i)=>{
-      const m = computeRow(r,i,data);
-      if (isFinite(m.kml)) kmls.push(m.kml);
-      if (isFinite(m.l100)) l100s.push(m.l100);
-      if (isFinite(m.costPerKm)) costKm.push(m.costPerKm);
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td data-k="date">${new Date(r.date).toLocaleString()}</td>
-        <td data-k="odo">${r.odo}</td>
-        <td data-k="liters">${r.liters}</td>
-        <td data-k="price">${r.price ?? ''}</td>
-        <td>${fmt(m.kml)}</td>
-        <td>${fmt(m.l100)}</td>
-        <td>${fmt(m.costPerKm)}</td>
-        <td data-k="station">${r.station ?? ''}</td>
-        <td data-k="notes">${r.notes ?? ''}</td>
-        <td><button class="btn pill" data-del="${r.id}">✕</button></td>
-      `;
-      rowsEl.appendChild(tr);
-    });
-    $('#avgKmL').textContent = fmt(avg(kmls));
-    $('#avgL100').textContent = fmt(avg(l100s));
-    $('#costPerKm').textContent = fmt(avg(costKm));
+    const maintSum = getMaintenance().reduce((s,m)=>s+Number(m.amount||0),0);
+    const grandCost = totalCost + maintSum;
+    const costPerKm = totalKm>0? (grandCost/totalKm) : 0;
+    return { totalFuel, totalCost, totalKm, maintSum, grandCost, costPerKm, segments };
   }
 
-  const avg = a => a.length? a.reduce((x,y)=>x+y,0)/a.length : NaN;
+  function renderUI(){ renderAuth(); renderMileageTable(); renderMaintTable(); renderStats(); }
 
-  // ---------- CRUD
-  $('#form').addEventListener('submit', (e)=>{
-    e.preventDefault();
-    const record = {
-      id: crypto.randomUUID(),
-      date: $('#date').value || new Date().toISOString(),
-      odo: Number($('#odo').value),
-      liters: Number($('#liters').value),
-      price: $('#price').value? Number($('#price').value) : null,
-      station: $('#station').value || '',
-      notes: $('#notes').value || ''
-    };
-    const all = load();
-    all.push(record); save(all); render(); e.target.reset();
-  });
-
-  rowsEl.addEventListener('click', (e)=>{
-    if (e.target.dataset.del){
-      const id = e.target.dataset.del;
-      const all = load().filter(r=>r.id!==id); save(all); render();
+  // ---------- Mileage table ----------
+  function renderMileageTable(){ const tbody = document.querySelector('#m_table tbody'); tbody.innerHTML='';
+    const arr = [...getEntries()].sort((a,b)=> new Date(b.date) - new Date(a.date));
+    for(const e of arr){ const tr = document.createElement('tr'); tr.innerHTML = `<td>${e.date}</td><td>${e.odo}</td><td>${Number(e.fuel_amount).toFixed(3)}</td><td>${Number(e.total_cost).toFixed(2)}</td><td>${e.startNew? 'NewSeg':''}</td><td class='actions'></td>`;
+      const a = tr.querySelector('.actions'); const edit = document.createElement('button'); edit.className='alt'; edit.textContent='Edit'; edit.addEventListener('click', ()=> fillMileageForm(e));
+      const del = document.createElement('button'); del.className='alt'; del.style.color='var(--danger)'; del.textContent='Delete'; del.addEventListener('click', ()=>{ if(confirm('Delete this entry?')){ const newArr = getEntries().filter(x=>x.id!==e.id); updateEntries(newArr); renderUI(); } });
+      a.appendChild(edit); a.appendChild(del);
+      tbody.appendChild(tr);
     }
-  });
-
-  // in-place edit
-  rowsEl.addEventListener('dblclick', (e)=>{
-    const cell = e.target.closest('[data-k]');
-    if (!cell) return;
-    const key = cell.dataset.k;
-    const row = cell.parentElement; // tr
-    const id = row.querySelector('button[data-del]').dataset.del;
-    const old = cell.textContent;
-    const input = document.createElement('input');
-    input.value = old; input.style.width='100%';
-    cell.innerHTML=''; cell.appendChild(input); input.focus();
-    input.addEventListener('blur', ()=>{
-      const all = load();
-      const rec = all.find(x=>x.id===id);
-      let val = input.value;
-      if(['odo','liters','price'].includes(key)) val = val? Number(val): null;
-      if(key==='date') val = new Date(val).toISOString();
-      rec[key] = val;
-      save(all); render();
-    });
-  });
-
-  // Export / Import
-  $('#btnExport').addEventListener('click', ()=>{
-    const blob = new Blob([JSON.stringify(load(),null,2)], {type:'application/json'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'bike-mileage-backup.json';
-    a.click();
-    URL.revokeObjectURL(a.href);
-  });
-  $('#fileImport').addEventListener('change', (e)=>{
-    const file = e.target.files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ()=>{ try{ const arr = JSON.parse(reader.result); save(arr); render(); }catch{ alert('Invalid JSON'); } };
-    reader.readAsText(file);
-  });
-
-  // Clear local
-  $('#btnClear').addEventListener('click', ()=>{
-    if (confirm('Delete ALL local data? This cannot be undone.')){ localStorage.removeItem(KEY); render(); }
-  });
-
-  // Default datetime
-  $('#date').value = new Date().toISOString().slice(0,16);
-
-  // PWA: register service worker if present
-  if ('serviceWorker' in navigator){
-    window.addEventListener('load', ()=> navigator.serviceWorker.register('./sw.js'));
   }
 
-  render();
-</script>
+  // fill form for edit
+  function fillMileageForm(e){ document.getElementById('m_date').value=e.date; document.getElementById('m_odo').value=e.odo; document.getElementById('m_fuel_price').value=e.fuel_price; document.getElementById('m_total_cost').value=e.total_cost; document.getElementById('m_start_new').checked=!!e.startNew;
+    document.getElementById('addMileage').textContent='Update entry'; document.getElementById('addMileage').dataset.editId = e.id;
+  }
+
+  // add or update
+  document.getElementById('addMileage').addEventListener('click', ()=>{
+    const date = document.getElementById('m_date').value; const odo = Number(document.getElementById('m_odo').value);
+    const fuel_price = Number(document.getElementById('m_fuel_price').value); const total_cost = Number(document.getElementById('m_total_cost').value);
+    const startNew = document.getElementById('m_start_new').checked; if(!date||isNaN(odo)) { alert('fill date & odo'); return }
+    const fuel_amount = fuel_price>0? (total_cost / fuel_price) : 0;
+    const editId = document.getElementById('addMileage').dataset.editId;
+    const entries = getEntries();
+    if(editId){ const idx = entries.findIndex(x=>x.id===editId); if(idx>-1){ entries[idx] = { ...entries[idx], date, odo, fuel_price, total_cost, fuel_amount, startNew }; updateEntries(entries); document.getElementById('addMileage').textContent='Add entry'; delete document.getElementById('addMileage').dataset.editId; clearMileageForm(); renderUI(); return; } }
+    const newEntry = { id: uid(), date, odo, fuel_price, total_cost, fuel_amount, startNew };
+    entries.push(newEntry); updateEntries(entries); clearMileageForm(); renderUI();
+  });
+  document.getElementById('clearMileage').addEventListener('click', clearMileageForm);
+  function clearMileageForm(){ document.getElementById('mileageForm').reset(); document.getElementById('addMileage').textContent='Add entry'; delete document.getElementById('addMileage').dataset.editId; }
+
+  // ---------- Maintenance table ----------
+  function renderMaintTable(){ const tbody = document.querySelector('#t_table tbody'); tbody.innerHTML='';
+    const arr = [...getMaintenance()].sort((a,b)=> new Date(b.date) - new Date(a.date));
+    for(const m of arr){ const tr = document.createElement('tr'); tr.innerHTML=`<td>${m.date}</td><td>${m.desc}</td><td>${Number(m.amount).toFixed(2)}</td><td class='actions'></td>`;
+      const a = tr.querySelector('.actions'); const edit = document.createElement('button'); edit.className='alt'; edit.textContent='Edit'; edit.addEventListener('click', ()=> fillMaintForm(m));
+      const del = document.createElement('button'); del.className='alt'; del.style.color='var(--danger)'; del.textContent='Delete'; del.addEventListener('click', ()=>{ if(confirm('Delete this maintenance item?')){ const arr=getMaintenance().filter(x=>x.id!==m.id); updateMaintenance(arr); renderUI(); } });
+      a.appendChild(edit); a.appendChild(del);
+      tbody.appendChild(tr);
+    }
+  }
+  function fillMaintForm(m){ document.getElementById('t_date').value=m.date; document.getElementById('t_desc').value=m.desc; document.getElementById('t_amount').value=m.amount; document.getElementById('addMaint').textContent='Update'; document.getElementById('addMaint').dataset.editId=m.id; }
+  document.getElementById('addMaint').addEventListener('click', ()=>{
+    const date = document.getElementById('t_date').value; const desc = document.getElementById('t_desc').value; const amount = Number(document.getElementById('t_amount').value);
+    if(!date||!desc||isNaN(amount)){alert('fill all fields');return}
+    const editId = document.getElementById('addMaint').dataset.editId; const arr = getMaintenance();
+    if(editId){ const idx = arr.findIndex(x=>x.id===editId); if(idx>-1){ arr[idx] = {...arr[idx], date, desc, amount}; updateMaintenance(arr); document.getElementById('addMaint').textContent='Add maintenance'; delete document.getElementById('addMaint').dataset.editId; clearMaintForm(); renderUI(); return; } }
+    arr.push({ id: uid(), date, desc, amount }); updateMaintenance(arr); clearMaintForm(); renderUI();
+  });
+  document.getElementById('clearMaint').addEventListener('click', clearMaintForm);
+  function clearMaintForm(){ document.getElementById('maintForm').reset(); document.getElementById('addMaint').textContent='Add maintenance'; delete document.getElementById('addMaint').dataset.editId; }
+
+  // ---------- Stats ----------
+  function renderStats(){ const s = computeMileageStats(); const ms = document.getElementById('m_stats'); ms.innerHTML = '';
+    const el = (t,v) => `<div class=stat><div class=muted>${t}</div><div style='font-weight:600;margin-top:6px'>${v}</div></div>`;
+    ms.insertAdjacentHTML('beforeend', el('Total fuel (L)', s.totalFuel.toFixed(3)));
+    ms.insertAdjacentHTML('beforeend', el('Total fuel cost', s.totalCost.toFixed(2)));
+    ms.insertAdjacentHTML('beforeend', el('Total distance (km)', s.totalKm.toFixed(1)));
+    ms.insertAdjacentHTML('beforeend', el('Maintenance sum', s.maintSum.toFixed(2)));
+    ms.insertAdjacentHTML('beforeend', el('Grand cost (fuel+maint)', s.grandCost.toFixed(2)));
+    ms.insertAdjacentHTML('beforeend', el('Cost per km', s.costPerKm? s.costPerKm.toFixed(3) : '—'));
+
+    const ts = document.getElementById('t_stats'); ts.innerHTML='';
+    // monthly & yearly totals
+    const maint = getMaintenance();
+    const byMonth = {};
+    const byYear = {};
+    for(const m of maint){ const dt = new Date(m.date); const k = dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0'); byMonth[k] = (byMonth[k]||0)+Number(m.amount);
+      const ky = dt.getFullYear(); byYear[ky] = (byYear[ky]||0)+Number(m.amount);
+    }
+    ts.insertAdjacentHTML('beforeend', el('Maintenance total', s.maintSum.toFixed(2)));
+    ts.insertAdjacentHTML('beforeend', el('Monthly example (latest)', Object.keys(byMonth).length? (Object.entries(byMonth).sort().pop()[1].toFixed(2)) : '0'));
+    ts.insertAdjacentHTML('beforeend', el('Yearly example (latest)', Object.keys(byYear).length? (Object.entries(byYear).sort().pop()[1].toFixed(2)) : '0'));
+    ts.insertAdjacentHTML('beforeend', el('Cost per km (shared)', s.costPerKm? s.costPerKm.toFixed(3) : '—'));
+  }
+
+  // ---------- Export / Import ----------
+  function exportData(userOnly=false){ const cur = getCurrentUser(); const all = loadAllUsers(); if(userOnly){ if(!cur){ alert('login to export your user data'); return } const data = {}; data[cur.username] = all[cur.username]; const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'}); const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=`bike-data-${cur.username}.json`; a.click(); URL.revokeObjectURL(url); return; }
+    const blob = new Blob([JSON.stringify(all, null, 2)], {type:'application/json'}); const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='bike-data-all.json'; a.click(); URL.revokeObjectURL(url);
+  }
+  document.getElementById('exportBtn').addEventListener('click', ()=> exportData(false));
+  document.getElementById('importBtn').addEventListener('click', ()=> document.getElementById('importFile').click());
+  document.getElementById('importFile').addEventListener('change', function(){ const f=this.files[0]; if(!f) return; const r=new FileReader(); r.onload = e=>{ try{ const obj = JSON.parse(e.target.result); const all = loadAllUsers(); // merge safely
+      for(const k of Object.keys(obj)){ all[k] = obj[k]; }
+      saveAllUsers(all); alert('Import complete. If any imported users match current username, data overwritten.'); renderUI(); }catch(err){alert('invalid file');} }; r.readAsText(f); });
+
+  // initial render
+  renderUI();
+  </script>
 </body>
 </html>
-
-
-/* ========================= sw.js =========================
-self.addEventListener('install', (e)=>{
-  e.waitUntil(caches.open('bike-milage-cache-v1').then(cache=> cache.addAll([
-    './', './index.html', './manifest.webmanifest'
-  ])));
-});
-self.addEventListener('fetch', (e)=>{
-  e.respondWith(caches.match(e.request).then(resp=> resp || fetch(e.request)));
-});
-========================= END sw.js ========================= */
-
-
-/* ============== manifest.webmanifest ==============
-{
-  "name": "Bike Mileage Tracker",
-  "short_name": "Mileage",
-  "start_url": "./",
-  "display": "standalone",
-  "background_color": "#0b1220",
-  "theme_color": "#0ea5e9",
-  "icons": []
-}
-================= END manifest.webmanifest ============= */
-
-
