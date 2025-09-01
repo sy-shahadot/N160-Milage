@@ -410,6 +410,19 @@
             background: rgba(102, 126, 234, 0.1);
         }
 
+        .sync-status {
+            background: rgba(102, 126, 234, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .sync-status.auto-save {
+            background: rgba(46, 160, 67, 0.1);
+            border-left: 4px solid #2ea043;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 15px;
@@ -511,7 +524,7 @@
             <div class="tabs">
                 <div class="tab active" onclick="switchTab('mileage')">Mileage Tracking</div>
                 <div class="tab" onclick="switchTab('maintenance')">Maintenance</div>
-                <div class="tab" onclick="switchTab('backup')">Backup & Restore</div>
+                <div class="tab" onclick="switchTab('sync')">Data Sync</div>
             </div>
 
             <!-- Mileage Tab -->
@@ -639,10 +652,14 @@
                 </div>
             </div>
 
-            <!-- Backup & Restore Tab -->
-            <div id="backup-tab" class="tab-content">
+            <!-- Data Sync Tab -->
+            <div id="sync-tab" class="tab-content">
+                <div class="sync-status auto-save">
+                    ✅ Auto-Save Active - All data is automatically saved to your device
+                </div>
+
                 <div class="card">
-                    <h3 class="card-title">Complete Backup & Restore</h3>
+                    <h3 class="card-title">Cross-Device Sync</h3>
                     
                     <div class="backup-info">
                         <h4 style="margin-bottom: 15px; color: #667eea;">Current Data Summary</h4>
@@ -657,33 +674,52 @@
                             </div>
                         </div>
                         <div style="margin-top: 10px; text-align: center; color: #b8c5d6;">
-                            Last updated: <span id="last-updated">Never</span>
+                            Last updated: <span id="last-updated">Just now</span>
                         </div>
                     </div>
 
+                    <div style="margin-bottom: 25px;">
+                        <h4 style="color: #667eea; margin-bottom: 15px;">To sync across devices:</h4>
+                        <ol style="color: #b8c5d6; margin-left: 20px; line-height: 1.8;">
+                            <li><strong>Export your data</strong> from this device</li>
+                            <li><strong>Send the file</strong> to your other device (email, cloud storage, etc.)</li>
+                            <li><strong>Import the data</strong> on your other device</li>
+                        </ol>
+                    </div>
+
                     <div class="backup-restore">
-                        <button onclick="createFullBackup()" class="btn btn-success">
-                            📥 Create Full Backup
+                        <button onclick="exportUserData()" class="btn btn-success">
+                            📥 Export My Data
                         </button>
-                        <label for="restore-file" class="btn btn-secondary">
-                            📤 Restore from Backup
+                        <label for="import-file" class="btn btn-secondary">
+                            📤 Import Data
                         </label>
-                        <input type="file" id="restore-file" class="file-input" accept=".json" onchange="restoreFromBackup(this)">
+                        <input type="file" id="import-file" class="file-input" accept=".json" onchange="importUserData(this)">
                     </div>
 
                     <div class="file-drop-zone" id="drop-zone">
                         <div style="font-size: 1.2rem; margin-bottom: 10px;">📁</div>
-                        <div>Drag and drop backup file here</div>
-                        <div style="margin-top: 10px; color: #b8c5d6; font-size: 0.9rem;">or click "Restore from Backup" button above</div>
+                        <div>Drag and drop your data file here</div>
+                        <div style="margin-top: 10px; color: #b8c5d6; font-size: 0.9rem;">or use the Import Data button above</div>
                     </div>
 
-                    <div style="margin-top: 25px; padding: 20px; background: rgba(255, 107, 107, 0.1); border-radius: 8px; border-left: 4px solid #ff6b6b;">
-                        <h4 style="color: #ff6b6b; margin-bottom: 10px;">⚠️ Important Notes</h4>
+                    <div style="margin-top: 25px; padding: 20px; background: rgba(102, 126, 234, 0.1); border-radius: 8px; border-left: 4px solid #667eea;">
+                        <h4 style="color: #667eea; margin-bottom: 10px;">ℹ️ How it works</h4>
                         <ul style="color: #b8c5d6; margin-left: 20px;">
-                            <li>Full backup includes all your mileage and maintenance data</li>
-                            <li>Restoring will completely replace your current data</li>
-                            <li>Always keep recent backups in a safe location</li>
-                            <li>Backup files are in JSON format and can be viewed in any text editor</li>
+                            <li>Data is automatically saved on each device you use</li>
+                            <li>Export creates a file with all your mileage and maintenance data</li>
+                            <li>Import merges new data with existing data (no duplicates)</li>
+                            <li>Your login works independently on each device</li>
+                        </ul>
+                    </div>
+
+                    <div style="margin-top: 20px; padding: 20px; background: rgba(255, 107, 107, 0.1); border-radius: 8px; border-left: 4px solid #ff6b6b;">
+                        <h4 style="color: #ff6b6b; margin-bottom: 10px;">⚠️ Important</h4>
+                        <ul style="color: #b8c5d6; margin-left: 20px;">
+                            <li>Each device stores data locally in the browser</li>
+                            <li>Clearing browser data will delete your information</li>
+                            <li>Regular exports are recommended as backups</li>
+                            <li>Data files contain your entries but not passwords</li>
                         </ul>
                     </div>
                 </div>
@@ -708,79 +744,74 @@
 
     <script>
         let currentUser = '';
-        let allData = {
-            users: {},
-            userData: {}
-        };
         let mileageData = [];
         let maintenanceData = [];
         let editingItem = null;
         let editingType = '';
         let resetFromNext = false;
 
-        // File Storage Functions
-        function saveAllData() {
-            const dataStr = JSON.stringify(allData, null, 2);
-            const dataBlob = new Blob([dataStr], {type: 'application/json'});
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(dataBlob);
-            link.download = 'bike_tracker_data.json';
-            link.click();
-            URL.revokeObjectURL(link.href);
+        // Storage Functions with localStorage
+        function saveToStorage(key, data) {
+            try {
+                localStorage.setItem(key, JSON.stringify(data));
+                return true;
+            } catch (error) {
+                console.error('Storage save error:', error);
+                showAlert('Failed to save data to device storage', 'error');
+                return false;
+            }
         }
 
-        function loadDataFromFile(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    try {
-                        const data = JSON.parse(e.target.result);
-                        resolve(data);
-                    } catch (error) {
-                        reject(error);
-                    }
-                };
-                reader.onerror = () => reject(new Error('Failed to read file'));
-                reader.readAsText(file);
-            });
-        }
-
-        function initializeData() {
-            allData = {
-                users: {},
-                userData: {},
-                lastUpdated: new Date().toISOString()
-            };
+        function loadFromStorage(key, defaultValue = null) {
+            try {
+                const data = localStorage.getItem(key);
+                return data ? JSON.parse(data) : defaultValue;
+            } catch (error) {
+                console.error('Storage load error:', error);
+                return defaultValue;
+            }
         }
 
         function saveUserData() {
             if (!currentUser) return;
             
-            allData.userData[currentUser] = {
+            const userData = {
                 mileage: mileageData,
                 maintenance: maintenanceData,
                 lastUpdated: new Date().toISOString()
             };
             
-            allData.lastUpdated = new Date().toISOString();
-            updateBackupStats();
+            // Save user-specific data
+            saveToStorage(`bikeTracker_userData_${currentUser}`, userData);
+            
+            // Update global last activity
+            const globalData = loadFromStorage('bikeTracker_global', { lastActivity: null });
+            globalData.lastActivity = new Date().toISOString();
+            saveToStorage('bikeTracker_global', globalData);
+            
+            updateSyncStats();
         }
 
         function loadUserData() {
-            if (!currentUser || !allData.userData[currentUser]) {
+            if (!currentUser) {
                 mileageData = [];
                 maintenanceData = [];
                 return;
             }
             
-            const userData = allData.userData[currentUser];
+            const userData = loadFromStorage(`bikeTracker_userData_${currentUser}`, {
+                mileage: [],
+                maintenance: [],
+                lastUpdated: new Date().toISOString()
+            });
+            
             mileageData = userData.mileage || [];
             maintenanceData = userData.maintenance || [];
             
             renderMileageHistory();
             renderMaintenanceHistory();
             updateStats();
-            updateBackupStats();
+            updateSyncStats();
         }
 
         // Authentication Functions
@@ -809,22 +840,35 @@
                 return;
             }
 
-            if (allData.users[username]) {
+            const users = loadFromStorage('bikeTracker_users', {});
+            
+            if (users[username]) {
                 showAlert('Username already exists', 'error');
                 return;
             }
 
-            allData.users[username] = { password: password };
-            allData.userData[username] = { mileage: [], maintenance: [], lastUpdated: new Date().toISOString() };
-            allData.lastUpdated = new Date().toISOString();
+            users[username] = { 
+                password: password,
+                created: new Date().toISOString()
+            };
             
-            showAlert('Registration successful! Please login.', 'success');
-            showLogin();
-            
-            // Clear form
-            document.getElementById('register-username').value = '';
-            document.getElementById('register-password').value = '';
-            document.getElementById('confirm-password').value = '';
+            if (saveToStorage('bikeTracker_users', users)) {
+                // Initialize empty user data
+                const userData = {
+                    mileage: [],
+                    maintenance: [],
+                    lastUpdated: new Date().toISOString()
+                };
+                saveToStorage(`bikeTracker_userData_${username}`, userData);
+                
+                showAlert('Registration successful! Please login.', 'success');
+                showLogin();
+                
+                // Clear form
+                document.getElementById('register-username').value = '';
+                document.getElementById('register-password').value = '';
+                document.getElementById('confirm-password').value = '';
+            }
         }
 
         function login() {
@@ -836,12 +880,17 @@
                 return;
             }
 
-            if (!allData.users[username] || allData.users[username].password !== password) {
+            const users = loadFromStorage('bikeTracker_users', {});
+            
+            if (!users[username] || users[username].password !== password) {
                 showAlert('Invalid username or password', 'error');
                 return;
             }
 
             currentUser = username;
+            
+            // Save current user session
+            saveToStorage('bikeTracker_currentUser', username);
             
             document.getElementById('auth-section').classList.add('hidden');
             document.getElementById('app-section').classList.remove('hidden');
@@ -853,6 +902,9 @@
 
         function logout() {
             currentUser = '';
+            
+            // Remove current user session
+            localStorage.removeItem('bikeTracker_currentUser');
             
             document.getElementById('app-section').classList.add('hidden');
             document.getElementById('auth-section').classList.remove('hidden');
@@ -1203,85 +1255,136 @@
             document.getElementById('maintenance-cost-per-km').textContent = `₹${maintenanceCostPerKm.toFixed(2)}`;
         }
 
-        // Backup & Restore Functions
-        function createFullBackup() {
-            const backupData = {
+        // Export/Import Functions
+        function exportUserData() {
+            if (!currentUser) return;
+            
+            const exportData = {
                 version: "1.0",
+                username: currentUser,
                 exportDate: new Date().toISOString(),
-                users: allData.users,
-                userData: allData.userData,
+                mileage: mileageData,
+                maintenance: maintenanceData,
                 metadata: {
-                    totalUsers: Object.keys(allData.users).length,
-                    totalEntries: Object.values(allData.userData).reduce((sum, user) => 
-                        sum + (user.mileage?.length || 0) + (user.maintenance?.length || 0), 0)
+                    totalMileageEntries: mileageData.length,
+                    totalMaintenanceEntries: maintenanceData.length,
+                    totalDistance: mileageData.reduce((sum, entry) => sum + entry.distance, 0),
+                    totalCost: mileageData.reduce((sum, entry) => sum + entry.totalCost, 0) + 
+                              maintenanceData.reduce((sum, entry) => sum + entry.amount, 0)
                 }
             };
             
-            const dataStr = JSON.stringify(backupData, null, 2);
+            const dataStr = JSON.stringify(exportData, null, 2);
             const dataBlob = new Blob([dataStr], {type: 'application/json'});
             
             const link = document.createElement('a');
             link.href = URL.createObjectURL(dataBlob);
-            link.download = `bike_tracker_backup_${new Date().toISOString().split('T')[0]}.json`;
+            link.download = `bike_tracker_${currentUser}_${new Date().toISOString().split('T')[0]}.json`;
             link.click();
             URL.revokeObjectURL(link.href);
             
-            showAlert('Full backup created successfully!', 'success');
+            showAlert('Data exported successfully!', 'success');
         }
 
-        function restoreFromBackup(input) {
+        function importUserData(input) {
             const file = input.files[0];
             if (!file) return;
 
             loadDataFromFile(file)
-                .then(backupData => {
-                    // Validate backup structure
-                    if (!backupData.users || !backupData.userData) {
-                        throw new Error('Invalid backup file structure');
+                .then(importData => {
+                    // Validate import structure
+                    if (!importData.mileage || !importData.maintenance) {
+                        throw new Error('Invalid data file structure');
                     }
 
-                    const totalUsers = Object.keys(backupData.users).length;
-                    const totalEntries = Object.values(backupData.userData).reduce((sum, user) => 
-                        sum + (user.mileage?.length || 0) + (user.maintenance?.length || 0), 0);
+                    const importMileageCount = importData.mileage.length;
+                    const importMaintenanceCount = importData.maintenance.length;
 
-                    if (confirm(`This will restore ${totalUsers} users with ${totalEntries} total entries. This will COMPLETELY REPLACE all current data. Are you sure?`)) {
-                        allData.users = backupData.users;
-                        allData.userData = backupData.userData;
-                        allData.lastUpdated = new Date().toISOString();
+                    if (confirm(`Import ${importMileageCount} mileage entries and ${importMaintenanceCount} maintenance entries? This will merge with your existing data.`)) {
+                        
+                        // Merge mileage data (avoid duplicates by date and odometer)
+                        importData.mileage.forEach(importEntry => {
+                            const exists = mileageData.find(entry => 
+                                entry.date === importEntry.date && 
+                                Math.abs(entry.odometer - importEntry.odometer) < 0.1
+                            );
+                            if (!exists) {
+                                // Assign new ID to avoid conflicts
+                                importEntry.id = Date.now() + Math.random();
+                                mileageData.push(importEntry);
+                            }
+                        });
 
-                        // If current user exists in backup, reload their data
-                        if (currentUser && allData.userData[currentUser]) {
-                            loadUserData();
-                        } else if (currentUser) {
-                            // Current user doesn't exist in backup, logout
-                            logout();
-                            showAlert('Current user not found in backup. Please login again.', 'error');
-                            return;
-                        }
+                        // Merge maintenance data (avoid duplicates by date and description)
+                        importData.maintenance.forEach(importEntry => {
+                            const exists = maintenanceData.find(entry => 
+                                entry.date === importEntry.date && 
+                                entry.description === importEntry.description &&
+                                Math.abs(entry.amount - importEntry.amount) < 0.01
+                            );
+                            if (!exists) {
+                                // Assign new ID to avoid conflicts
+                                importEntry.id = Date.now() + Math.random();
+                                maintenanceData.push(importEntry);
+                            }
+                        });
 
-                        showAlert(`Backup restored successfully! ${totalUsers} users and ${totalEntries} entries restored.`, 'success');
-                        updateBackupStats();
+                        // Sort and recalculate
+                        mileageData.sort((a, b) => new Date(a.date) - new Date(b.date));
+                        maintenanceData.sort((a, b) => new Date(b.date) - new Date(a.date));
+                        recalculateMileageData();
+
+                        saveUserData();
+                        renderMileageHistory();
+                        renderMaintenanceHistory();
+                        updateStats();
+
+                        showAlert(`Data imported successfully! Added ${importMileageCount} mileage and ${importMaintenanceCount} maintenance entries.`, 'success');
                     }
                 })
                 .catch(error => {
-                    console.error('Restore error:', error);
-                    showAlert('Error restoring backup. Please check the file format.', 'error');
+                    console.error('Import error:', error);
+                    showAlert('Error importing data. Please check the file format.', 'error');
                 });
             
             // Clear the input
             input.value = '';
         }
 
-        function updateBackupStats() {
+        function loadDataFromFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        resolve(data);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.onerror = () => reject(new Error('Failed to read file'));
+                reader.readAsText(file);
+            });
+        }
+
+        function updateSyncStats() {
             const mileageCount = mileageData.length;
             const maintenanceCount = maintenanceData.length;
             
             document.getElementById('backup-mileage-count').textContent = mileageCount;
             document.getElementById('backup-maintenance-count').textContent = maintenanceCount;
             
-            const lastUpdated = allData.userData[currentUser]?.lastUpdated || allData.lastUpdated;
+            const userData = loadFromStorage(`bikeTracker_userData_${currentUser}`, {});
+            const lastUpdated = userData.lastUpdated;
             if (lastUpdated) {
-                document.getElementById('last-updated').textContent = new Date(lastUpdated).toLocaleString();
+                const timeDiff = Date.now() - new Date(lastUpdated).getTime();
+                if (timeDiff < 60000) { // Less than 1 minute
+                    document.getElementById('last-updated').textContent = 'Just now';
+                } else if (timeDiff < 3600000) { // Less than 1 hour
+                    document.getElementById('last-updated').textContent = `${Math.floor(timeDiff / 60000)} minutes ago`;
+                } else {
+                    document.getElementById('last-updated').textContent = new Date(lastUpdated).toLocaleString();
+                }
             }
         }
 
@@ -1307,38 +1410,58 @@
                     const file = files[0];
                     if (file.type === 'application/json' || file.name.endsWith('.json')) {
                         loadDataFromFile(file)
-                            .then(backupData => {
-                                if (!backupData.users || !backupData.userData) {
-                                    throw new Error('Invalid backup file structure');
+                            .then(importData => {
+                                if (!importData.mileage || !importData.maintenance) {
+                                    throw new Error('Invalid data file structure');
                                 }
 
-                                const totalUsers = Object.keys(backupData.users).length;
-                                const totalEntries = Object.values(backupData.userData).reduce((sum, user) => 
-                                    sum + (user.mileage?.length || 0) + (user.maintenance?.length || 0), 0);
+                                const importMileageCount = importData.mileage.length;
+                                const importMaintenanceCount = importData.maintenance.length;
 
-                                if (confirm(`This will restore ${totalUsers} users with ${totalEntries} total entries. This will COMPLETELY REPLACE all current data. Are you sure?`)) {
-                                    allData.users = backupData.users;
-                                    allData.userData = backupData.userData;
-                                    allData.lastUpdated = new Date().toISOString();
+                                if (confirm(`Import ${importMileageCount} mileage entries and ${importMaintenanceCount} maintenance entries? This will merge with your existing data.`)) {
+                                    
+                                    // Merge data logic (same as importUserData)
+                                    importData.mileage.forEach(importEntry => {
+                                        const exists = mileageData.find(entry => 
+                                            entry.date === importEntry.date && 
+                                            Math.abs(entry.odometer - importEntry.odometer) < 0.1
+                                        );
+                                        if (!exists) {
+                                            importEntry.id = Date.now() + Math.random();
+                                            mileageData.push(importEntry);
+                                        }
+                                    });
 
-                                    if (currentUser && allData.userData[currentUser]) {
-                                        loadUserData();
-                                    } else if (currentUser) {
-                                        logout();
-                                        showAlert('Current user not found in backup. Please login again.', 'error');
-                                        return;
-                                    }
+                                    importData.maintenance.forEach(importEntry => {
+                                        const exists = maintenanceData.find(entry => 
+                                            entry.date === importEntry.date && 
+                                            entry.description === importEntry.description &&
+                                            Math.abs(entry.amount - importEntry.amount) < 0.01
+                                        );
+                                        if (!exists) {
+                                            importEntry.id = Date.now() + Math.random();
+                                            maintenanceData.push(importEntry);
+                                        }
+                                    });
 
-                                    showAlert(`Backup restored successfully! ${totalUsers} users and ${totalEntries} entries restored.`, 'success');
-                                    updateBackupStats();
+                                    mileageData.sort((a, b) => new Date(a.date) - new Date(b.date));
+                                    maintenanceData.sort((a, b) => new Date(b.date) - new Date(a.date));
+                                    recalculateMileageData();
+
+                                    saveUserData();
+                                    renderMileageHistory();
+                                    renderMaintenanceHistory();
+                                    updateStats();
+
+                                    showAlert(`Data imported successfully! Added ${importMileageCount} mileage and ${importMaintenanceCount} maintenance entries.`, 'success');
                                 }
                             })
                             .catch(error => {
-                                console.error('Restore error:', error);
-                                showAlert('Error restoring backup. Please check the file format.', 'error');
+                                console.error('Import error:', error);
+                                showAlert('Error importing data. Please check the file format.', 'error');
                             });
                     } else {
-                        showAlert('Please drop a valid JSON backup file.', 'error');
+                        showAlert('Please drop a valid JSON data file.', 'error');
                     }
                 }
             });
@@ -1364,12 +1487,24 @@
 
         // Initialize App
         function initApp() {
-            initializeData();
-            
             // Set today's date as default
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('mileage-date').value = today;
             document.getElementById('maintenance-date').value = today;
+
+            // Check if user is already logged in
+            const savedUser = loadFromStorage('bikeTracker_currentUser');
+            if (savedUser) {
+                const users = loadFromStorage('bikeTracker_users', {});
+                if (users[savedUser]) {
+                    currentUser = savedUser;
+                    document.getElementById('auth-section').classList.add('hidden');
+                    document.getElementById('app-section').classList.remove('hidden');
+                    document.getElementById('current-user').textContent = savedUser;
+                    loadUserData();
+                    updateStats();
+                }
+            }
 
             // Setup drag and drop
             setupDragAndDrop();
@@ -1388,7 +1523,7 @@
                 }
             });
 
-            updateBackupStats();
+            updateSyncStats();
         }
 
         // Start the app
